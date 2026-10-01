@@ -1,10 +1,14 @@
 @import "tailwindcss";
 
-@font-face{font-family:Vazirmatn;src:url('/fonts/vazirmatn.woff2') format('woff2');font-style:normal;font-weight:100 900;font-display:swap}
+@font-face{font-family:Aria;src:url('/fonts/ARIA-LIGHT.woff2') format('woff2');font-style:normal;font-weight:100;font-display:swap}
+@font-face{font-family:Aria;src:url('/fonts/ARIA-MEDIUM.woff2') format('woff2');font-style:normal;font-weight:300;font-display:swap}
+@font-face{font-family:Aria;src:url('/fonts/ARIA-BOLD.woff2') format('woff2');font-style:normal;font-weight:500;font-display:swap}
+@font-face{font-family:Aria;src:url('/fonts/ARIA-BLACK.woff2') format('woff2');font-style:normal;font-weight:900;font-display:swap}
+
 :root{--primary:#5754e8;--primary-hover:#4945d5;--primary-light:#efeeff;--ink:#282d43;--muted:#9094a6;--border:#e9ebf2;--surface:#f7f8fc;--navy:#252b45;--green:#329e82}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;background:var(--surface);color:var(--ink);font-family:Vazirmatn,Arial,sans-serif;font-size:14px;line-height:1.8;-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--surface);color:var(--ink);font-family:aria,Arial,sans-serif;font-size:14px;line-height:1.8;-webkit-font-smoothing:antialiased}
 button,input,textarea{font:inherit}
 button,a,input,textarea{-webkit-tap-highlight-color:transparent}
 button{cursor:pointer;border:0;background:none;color:inherit;padding:0}
@@ -206,7 +210,7 @@ svg{flex-shrink:0}
 .connection-divider{display:flex;gap:9px;align-items:center;color:#737e9d;font-size:7.5px;margin:10px 5px 8px;line-height:1.7}
 .connection-divider>span{height:1px;flex:1;background:#ffffff0a}
 .connection-code{display:flex;align-items:center;justify-content:center;gap:7px;background:#ffffff06;border:1px solid #ffffff08;border-radius:7px;margin:0 24px;min-height:33px}
-.connection-code>div{display:flex;align-items:center;gap:8px;color:#edeef7;font-size:15px;font-weight:500;font-family:Vazirmatn,Arial,sans-serif;letter-spacing:.7px}
+.connection-code>div{display:flex;align-items:center;gap:8px;color:#edeef7;font-size:15px;font-weight:500;font-family:aria,Arial,sans-serif;letter-spacing:.7px}
 .connection-code>div>span:nth-child(3){margin-right:4px}
 .connection-code .icon-button{width:22px;height:27px;color:#6e7897}
 .connection-code .icon-button:hover:not(:disabled){color:#c5befa;background:transparent}
