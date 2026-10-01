@@ -10,6 +10,7 @@ import ConnectionCard from "@/components/connection-card";
 import { TransferDownloads, TransferSuccess } from "@/components/transfer-downloads";
 import ReceivePanel from "@/components/receive-panel";
 import Guide from "@/components/guide";
+import ContactPopup from "@/components/contact-popup"'
 
 type Section = "home" | "history" | "guide";
 type InstallPrompt = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
@@ -33,6 +34,7 @@ export default function TransferApp() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
   const [modal, setModal] = useState<"settings" | "feedback" | "install" | null>(null);
+  const [contactOpen, setContactOpen] = useState(true); 
   const [selected, setSelected] = useState<Transfer | null>(null);
   const [deleting, setDeleting] = useState<Transfer | null>(null);
   const [busy, setBusy] = useState(false);
