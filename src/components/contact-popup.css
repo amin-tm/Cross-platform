@@ -1,0 +1,57 @@
+/* Contact pop-up shown above the transfer dashboard. Always fits the viewport without scrolling. */
+.cp-backdrop{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;background:#1f2340a6;backdrop-filter:blur(6px);animation:cp-fade .22s ease}
+.cp-card{width:100%;max-width:448px;max-height:calc(100dvh - 24px);overflow:hidden;background:#fff;border:1px solid #ececf6;border-radius:24px;padding:20px 22px 22px;box-shadow:0 34px 90px #14183a38;animation:cp-rise .28s cubic-bezier(.2,.8,.25,1);position:relative}
+.cp-card:focus{outline:none}
+.cp-card:before{content:"";position:absolute;width:210px;height:210px;border-radius:50%;background:radial-gradient(circle,#f1f0ff,transparent 68%);top:-96px;left:-72px;pointer-events:none}
+.cp-top{position:relative;display:flex;align-items:center;justify-content:space-between}
+.cp-top .brand-mark{width:34px;height:34px;border-radius:10px;box-shadow:0 5px 13px #5754e826}
+.cp-top .brand-mark svg{width:27px;height:27px}
+.cp-top .brand-name{font-size:25px}
+.cp-close{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;color:#a0a3b5;background:#f6f6fb;transition:background .18s,color .18s}
+.cp-close:hover{background:#eceaff;color:#5754e8}
+.cp-heading{position:relative;margin:17px 0 15px}
+.cp-kicker{display:flex;align-items:center;gap:7px;color:#7d77dc;font-size:11px;font-weight:600;margin-bottom:2px}
+.cp-kicker i{display:block;width:18px;height:2px;border-radius:5px;background:#7d77dc}
+.cp-heading h2{font-size:23px;font-weight:780;letter-spacing:-.7px;line-height:1.55;color:#2c3048}
+.cp-channels{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.cp-channel{--tint:#f8f9fe;--accent:#6b75a2;--line:#e9eaf5;display:flex;align-items:center;gap:9px;height:70px;min-width:0;padding:9px;background:var(--tint);border:1px solid var(--line);border-radius:14px;transition:transform .18s,border-color .18s,box-shadow .18s}
+.cp-channel:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 8px 20px #30304d12}
+.cp-channel:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.cp-bale{--tint:#f1f9fd;--accent:#47a5ce;--line:#e1f1f9}
+.cp-eitaa{--tint:#fff8f0;--accent:#eaa443;--line:#f9ebd8}
+.cp-rubika{--tint:#f4faf8;--accent:#36a89d;--line:#dff0ec}
+.cp-telegram{--tint:#f1f9ff;--accent:#3e9dd1;--line:#dfeffa}
+.cp-channel-icon{width:44px;height:44px;flex:0 0 44px;display:grid;place-items:center;background:#fff;border-radius:11px;box-shadow:0 2px 6px #40405012}
+.cp-channel-icon img{width:32px;height:32px;object-fit:contain}
+.cp-channel-text{min-width:0;display:flex;flex-direction:column;align-items:flex-start;line-height:1.65}
+.cp-channel-text strong{font-size:13px;font-weight:700;color:#33384f}
+.cp-channel-text>span{font-size:10px;color:#7a7f94;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cp-channel-arrow{margin-right:auto;align-self:flex-start;margin-top:3px;color:var(--accent);opacity:.7;transition:transform .18s,opacity .18s}
+.cp-channel:hover .cp-channel-arrow{transform:translate(-2px,-2px);opacity:1}
+.cp-phone{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:54px;margin-top:10px;padding:8px 12px;border:1px solid #ececf4;border-radius:13px}
+.cp-phone-label{display:flex;align-items:center;gap:9px;font-size:11.5px;color:#666d83;white-space:nowrap}
+.cp-phone-icon{width:32px;height:32px;display:grid;place-items:center;border-radius:9px;background:#f2f0ff;color:#6863c8}
+.cp-phone-value{display:flex;align-items:center;gap:3px;min-width:0}
+.cp-phone-value b{font-size:15px;font-weight:680;color:#32364e;letter-spacing:.4px;white-space:nowrap}
+.cp-copy{width:30px;height:30px;display:grid;place-items:center;border-radius:8px;color:#9fa0b6;transition:background .18s,color .18s}
+.cp-copy:hover{background:#f0efff;color:#5754e8}
+.cp-footer{margin-top:17px;padding-top:15px;border-top:1px solid #f0f0f6}
+.cp-footer-text{display:block;text-align:center;font-size:10.5px;color:#7c8196;margin-bottom:9px}
+.cp-upload{display:flex;align-items:center;gap:10px;width:100%;height:54px;padding:0 15px;background:#5754e8;color:#fff;border-radius:13px;font-size:13px;font-weight:680;box-shadow:0 11px 24px #5754e830;transition:background .18s,transform .18s,box-shadow .18s}
+.cp-upload:hover{background:#4945d5;transform:translateY(-2px);box-shadow:0 14px 28px #5754e83d}
+.cp-upload:focus-visible{outline:3px solid #a4a0fa;outline-offset:3px}
+.cp-upload-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:9px;background:#ffffff22}
+.cp-upload-arrow{margin-right:auto;transition:transform .18s}
+.cp-upload:hover .cp-upload-arrow{transform:translateX(-3px)}
+
+/* Entry point to bring the pop-up back after it was dismissed. */
+.topbar-contact{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:9px;background:#f2f1ff;border:1px solid #e6e4fb;color:#5f59d2;font-size:11.5px;font-weight:600;white-space:nowrap;transition:background .18s,border-color .18s}
+.topbar-contact:hover{background:#e9e7ff;border-color:#d5d1f7}
+
+@media(max-width:640px){.topbar-contact{width:34px;padding:0;justify-content:center}.topbar-contact span{display:none}}
+@media(max-height:640px){.cp-backdrop{padding:8px}.cp-card{padding:14px 16px 16px;border-radius:20px}.cp-heading{margin:10px 0 10px}.cp-heading h2{font-size:19px}.cp-kicker{font-size:10px}.cp-channel{height:58px;padding:7px}.cp-channel-icon{width:38px;height:38px;flex-basis:38px}.cp-channel-icon img{width:28px;height:28px}.cp-phone{min-height:46px;margin-top:8px;padding:5px 10px}.cp-phone-icon{width:28px;height:28px}.cp-footer{margin-top:11px;padding-top:10px}.cp-footer-text{display:none}.cp-upload{height:46px}}
+@media(max-height:520px){.cp-top .brand-name{font-size:21px}.cp-top .brand-mark{width:28px;height:28px}.cp-heading{margin:6px 0 8px}.cp-kicker{display:none}.cp-channel{height:50px}.cp-channel-icon{width:32px;height:32px;flex-basis:32px}.cp-channel-icon img{width:24px;height:24px}.cp-channel-arrow{display:none}.cp-phone{min-height:40px}.cp-footer{margin-top:8px;padding-top:8px}.cp-upload{height:42px}}
+@media(max-width:400px){.cp-card{padding-left:14px;padding-right:14px}.cp-channels{gap:7px}.cp-channel{gap:6px;padding:7px}.cp-channel-icon{width:38px;height:38px;flex-basis:38px}.cp-channel-icon img{width:28px;height:28px}.cp-channel-text strong{font-size:12px}.cp-channel-text>span{font-size:9px}.cp-channel-arrow{display:none}.cp-phone-label{font-size:10.5px}.cp-phone-value b{font-size:13.5px}}
+@keyframes cp-fade{from{opacity:0}to{opacity:1}}
+@keyframes cp-rise{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.cp-backdrop,.cp-card{animation:none}.cp-channel,.cp-upload,.cp-upload-arrow,.cp-channel-arrow{transition:none}}
