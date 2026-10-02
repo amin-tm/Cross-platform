@@ -35,6 +35,28 @@ export function normalizeCode(value: string): string {
   return value.replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit))).replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit))).replace(/\D/g, "").slice(0, 6);
 }
 
+/** Persian/Arabic digits → Latin, so phone input works with any keyboard layout. */
+export function toLatinDigits(value: string): string {
+  return value
+    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)));
+}
+
+/** Canonical form of an Iranian mobile number: 09xxxxxxxxx. */
+export function normalizePhone(value: string): string {
+  const digits = toLatinDigits(value).replace(/\D/g, "");
+
+  if (digits.startsWith("0098")) return `0${digits.slice(4)}`;
+  if (digits.startsWith("98") && digits.length === 12) return `0${digits.slice(2)}`;
+  if (digits.length === 10 && digits.startsWith("9")) return `0${digits}`;
+
+  return digits;
+}
+
+export function isValidIranMobile(value: string): boolean {
+  return /^09\d{9}$/.test(value);
+}
+
 export function relativeTime(value: string): string {
   const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60000));
   if (minutes < 1) return "همین الان";
