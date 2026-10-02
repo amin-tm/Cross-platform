@@ -11,7 +11,6 @@ import { TransferDownloads, TransferSuccess } from "@/components/transfer-downlo
 import ReceivePanel from "@/components/receive-panel";
 import Guide from "@/components/guide";
 import ContactPopup from "@/components/contact-popup";
-import ContactPopup from "@/components/contact-popup"
 import { MessageCircle } from "lucide-react";
 
 type Section = "home" | "history" | "guide";
@@ -36,7 +35,6 @@ export default function TransferApp() {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
   const [modal, setModal] = useState<"settings" | "feedback" | "install" | null>(null);
-  const [contactOpen, setContactOpen] = useState(true);
   const [contactOpen, setContactOpen] = useState(true);
   const [selected, setSelected] = useState<Transfer | null>(null);
   const [deleting, setDeleting] = useState<Transfer | null>(null);
@@ -184,7 +182,6 @@ export default function TransferApp() {
     </div>
     {toast && <div className={`toast ${toast.error ? "toast-error" : ""}`} role="status">{toast.error ? <Info size={19}/> : <span className="toast-check"><Check size={14}/></span>}<span>{toast.message}</span><button aria-label="بستن پیام" onClick={() => setToast(null)}><X size={15}/></button></div>}
     {contactOpen && <ContactPopup onClose={() => setContactOpen(false)} onUpload={() => { setContactOpen(false); if (!uploadBusy) { setSection("home"); setTab("send"); } }}/>}
-    {contactOpen && <ContactPopup onClose={() => setContactOpen(false)} onUpload={() => {setContactOpen(false);if (!uploadBusy) {setSection("home");setTab("send");}}}/>}
     {modal === "settings" && <Modal title="تنظیمات این دستگاه" onClose={closeModal}><form onSubmit={(event) => { event.preventDefault(); const name = deviceDraft.trim() || "دستگاه شما"; setDeviceName(name); try { localStorage.setItem("pol_device_name", name); } catch { /* optional persistence */ } setModal(null); notify("نام دستگاه ذخیره شد."); }}><p className="modal-description">حسابی در کار نیست؛ این تنظیمات فقط برای مرورگر شماست.</p><label className="form-label" htmlFor="device-name">نام دستگاه</label><input id="device-name" className="form-input" value={deviceDraft} onChange={(event) => setDeviceDraft(event.target.value)} maxLength={40} placeholder="مثلاً کامپیوتر من"/><div className="settings-info-row"><span><Clock3 size={17}/>زمان نگه‌داری فایل‌ها</span><b>۲۴ ساعت</b></div><div className="privacy-note"><ShieldCheck size={20}/><p>تاریخچه با یک شناسهٔ ناشناس در همین مرورگر نگه‌داری می‌شود. لینک دریافت را فقط با افراد مورد اعتماد به اشتراک بگذارید.</p></div><button className="button button-primary full-width" type="submit">ذخیرهٔ تغییرات<Check size={16}/></button></form></Modal>}
     {modal === "feedback" && <Modal title="پُل را بهتر بسازیم" onClose={closeModal}><form onSubmit={sendFeedback}><p className="modal-description">پیشنهاد یا مشکلی دارید؟ بدون وارد کردن مشخصات، برایمان بنویسید.</p><label className="form-label" htmlFor="feedback">پیام شما</label><textarea id="feedback" className="form-textarea" rows={5} value={feedbackMessage} onChange={(event) => setFeedbackMessage(event.target.value)} placeholder="تجربهٔ انتقال فایل چطور بود؟" minLength={5} maxLength={2000} required/><div className="character-count">{feedbackMessage.length.toLocaleString("fa-IR")} / ۲۰۰۰</div><button className="button button-primary full-width" type="submit" disabled={busy || feedbackMessage.trim().length < 5}>{busy ? <LoaderCircle className="spin" size={17}/> : <Send size={17}/>}ارسال بازخورد</button></form></Modal>}
     {modal === "install" && <Modal title="پُل، همیشه دم دست" onClose={closeModal}><p className="modal-description">استفاده از پُل به نصب نیاز ندارد. برای دسترسی سریع‌تر، آن را به صفحهٔ اصلی اضافه کنید.</p><div className="install-instruction"><PlatformIcon platform="apple" size={25}/><div><h3>آیفون و آیپد</h3><p>در Safari، دکمهٔ اشتراک‌گذاری را بزنید و «Add to Home Screen» را انتخاب کنید.</p></div></div><div className="install-instruction"><PlatformIcon platform="android" size={25}/><div><h3>اندروید</h3><p>در منوی سه‌نقطهٔ Chrome، «Add to Home screen» یا «Install app» را انتخاب کنید.</p></div></div><div className="install-instruction"><PlatformIcon platform="windows" size={22}/><div><h3>ویندوز و مک</h3><p>از گزینهٔ نصب برنامه در نوار آدرس Chrome یا منوی Apps در Edge استفاده کنید.</p></div></div><button className="button button-primary full-width" onClick={closeModal}>متوجه شدم<Check size={17}/></button></Modal>}
