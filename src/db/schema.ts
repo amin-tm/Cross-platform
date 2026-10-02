@@ -26,6 +26,16 @@ export const transferFiles = pgTable("transfer_files", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/** Phone numbers collected before the contact links are revealed. */
+export const leads = pgTable("leads", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  phone: varchar("phone", { length: 20 }).notNull().unique(),
+  visits: integer("visits").notNull().default(1),
+  source: varchar("source", { length: 40 }).notNull().default("contact-popup"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const feedback = pgTable("feedback", {
   id: uuid("id").primaryKey().defaultRandom(),
   message: text("message").notNull(),
