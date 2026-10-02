@@ -48,3 +48,17 @@ alter table public.feedback enable row level security;
 insert into storage.buckets (id, name, public)
 values ('transfers', 'transfers', false)
 on conflict (id) do nothing;
+
+create table if not exists public.leads (
+  id uuid primary key default gen_random_uuid(),
+  phone varchar(20) not null unique,
+  visits integer not null default 1,
+  source varchar(40) not null default 'contact-popup',
+  created_at timestamptz not null default now(),
+  last_seen_at timestamptz not null default now()
+);
+
+create index if not exists leads_created_at_idx
+on public.leads (created_at desc);
+
+alter table public.leads enable row level security;
