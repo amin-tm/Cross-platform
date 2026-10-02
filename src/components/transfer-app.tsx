@@ -11,7 +11,6 @@ import { TransferDownloads, TransferSuccess } from "@/components/transfer-downlo
 import ReceivePanel from "@/components/receive-panel";
 import Guide from "@/components/guide";
 import ContactPopup from "@/components/contact-popup";
-import { MessageCircle } from "lucide-react";
 
 type Section = "home" | "history" | "guide";
 type InstallPrompt = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
