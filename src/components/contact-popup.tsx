@@ -40,28 +40,46 @@ export default function ContactPopup({ onClose, onUpload }: { onClose: () => voi
   // no click-outside. The dialog itself is the only reachable thing on the page.
   const locked = step === "gate";
 
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    (card.current?.querySelector<HTMLElement>("[data-initial-focus]") ?? card.current)?.focus();
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") { if (!locked) onClose(); return; }
-      if (event.key !== "Tab" || !card.current) return;
-      const items = card.current.querySelectorAll<HTMLElement>("a[href], button:not(:disabled), input");
-      if (!items.length) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", onKey);
-      previous?.focus?.();
-    };
-  }, [onClose, locked]);
+useEffect(() => {
+  const previous = document.activeElement as HTMLElement | null;
+  const previousOverflow = document.body.style.overflow;
+
+  document.body.style.overflow = "hidden";
+
+  const onKey = (event: KeyboardEvent) => {
+    if (event.key === "Escape") {
+      if (!locked) onClose();
+      return;
+    }
+
+    if (event.key !== "Tab" || !card.current) return;
+
+    const items = card.current.querySelectorAll<HTMLElement>(
+      "a[href], button:not(:disabled), input"
+    );
+
+    if (!items.length) return;
+
+    const first = items[0];
+    const last = items[items.length - 1];
+
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
+  document.addEventListener("keydown", onKey);
+
+  return () => {
+    document.body.style.overflow = previousOverflow;
+    document.removeEventListener("keydown", onKey);
+    previous?.focus?.();
+  };
+}, [onClose, locked]);
 
   // A returning visitor on this browser already gave their number, so the gate is
   // skipped and nothing is sent again — the number is already in the database.
