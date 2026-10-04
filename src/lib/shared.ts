@@ -13,6 +13,7 @@ export type Transfer = {
   code: string;
   kind: string;
   status: string;
+  textContent: string | null;
   totalSize: number;
   fileCount: number;
   downloads: number;
