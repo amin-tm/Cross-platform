@@ -9,6 +9,7 @@ export const transfers = pgTable("transfers", {
   status: varchar("status", { length: 12 }).notNull().default("pending"),
   totalSize: bigint("total_size", { mode: "number" }).notNull().default(0),
   fileCount: integer("file_count").notNull().default(0),
+  textContent: text("text_content"),
   downloads: integer("downloads").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   completedAt: timestamp("completed_at", { withTimezone: true }),
