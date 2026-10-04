@@ -24,6 +24,16 @@ export async function POST(request: Request) {
     if (rateLimited(request, "create", 30)) return apiError("لطفاً یک دقیقه صبر کنید و دوباره تلاش کنید.", 429);
     const body = await request.json().catch(() => ({}));
     const kind = body.kind === "inbox" ? "inbox" : "send";
+    const textContent =
+    typeof body.textContent === "string"
+    ? body.textContent.trim()
+    : null;
+    if (textContent !== null && (textContent.length === 0 || textContent.length > 20000)) {
+      return apiError("متن باید بین ۱ تا ۲۰۰۰۰ کاراکتر باشد.", 422);
+    }
+    if (textContent !== null && kind !== "send") {
+      return apiError("نوع انتقال متن نامعتبر است.", 400);
+    }
     const visitor = await getVisitor(true);
     await cleanupExpired();
     if (kind === "inbox" && !body.fresh) {
@@ -31,7 +41,7 @@ export async function POST(request: Request) {
       if (existing) return Response.json(await serializeTransfer(existing, visitor));
     }
     for (let attempt = 0; attempt < 5; attempt++) {
-      const [created] = await db.insert(transfers).values({ code: String(randomInt(100000, 1000000)), ownerId: visitor!, kind, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) }).onConflictDoNothing().returning();
+      const [created] = await db.insert(transfers).values({ code: String(randomInt(100000, 1000000)), ownerId: visitor!, kind, textContent, status: textContent !== null ? "ready" : "pending", completedAt: textContent !== null ? new Date() : null, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) }).onConflictDoNothing().returning();
       if (created) return Response.json(await serializeTransfer(created, visitor), { status: 201 });
     }
     return apiError("ساخت کد اتصال ممکن نشد. دوباره تلاش کنید.", 503);
