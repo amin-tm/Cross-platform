@@ -28,6 +28,10 @@ export default function P2PTest() {
   const pendingCandidates = useRef<RTCIceCandidateInit[]>([]);
   const receiveRef = useRef<{ header: FileHeader; chunks: BlobPart[]; size: number } | null>(null);
   const downloadRef = useRef<string | null>(null);
+  const transferStartedRef = useRef(0);
+  const [networkInfo, setNetworkInfo] = useState("");
+  const [speedInfo, setSpeedInfo] = useState("");
+
 
   function stopPolling() {
     if (pollRef.current) clearInterval(pollRef.current);
@@ -90,11 +94,15 @@ export default function P2PTest() {
             setProgress(100);
             setStatus("فایل کامل دریافت شد. برای ذخیره، روی دانلود بزنید.");
             channel.send(JSON.stringify({ kind: "ack" }));
-          } else if (msg.kind === "ack") {
-            setStatus("گیرنده دریافت کامل فایل را تأیید کرد.");
-          }
-        } catch { setStatus("پیام دریافت‌شده نامعتبر بود."); }
-        return;
+          
+            } else if (msg.kind === "ack") {
+              const seconds = (performance.now() - transferStartedRef.current) / 1000;
+              const mbps = file && seconds > 0 ? ((file.size * 8) / seconds / 1000000).toFixed(2) : "نامشخص";
+              setSpeedInfo(`زمان دریافت تأیید: ${seconds.toFixed(1)} ثانیه | سرعت متوسط: ${mbps} Mbps`);
+              setStatus("گیرنده دریافت کامل فایل را تأیید کرد.");
+            }
+            } catch { setStatus("پیام دریافت‌شده نامعتبر بود."); }
+            return;
       }
       const current = receiveRef.current;
       if (!current || !(event.data instanceof ArrayBuffer)) return;
@@ -107,6 +115,49 @@ export default function P2PTest() {
   function makePeer() {
     const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.cloudflare.com:3478" }] });
     pcRef.current = pc;
+    
+const inspectConnection = async () => {
+  if (pc.connectionState !== "connected") return;
+
+  const stats = await pc.getStats();
+  let selectedPair: any = null;
+
+  stats.forEach((report) => {
+    if (
+      report.type === "transport" &&
+      report.selectedCandidatePairId
+    ) {
+      selectedPair = stats.get(report.selectedCandidatePairId);
+    }
+  });
+
+  if (!selectedPair) {
+    stats.forEach((report) => {
+      if (
+        report.type === "candidate-pair" &&
+        report.state === "succeeded" &&
+        report.nominated
+      ) {
+        selectedPair = report;
+      }
+    });
+  }
+
+  if (!selectedPair) return;
+
+  const local = stats.get(selectedPair.localCandidateId);
+  const remote = stats.get(selectedPair.remoteCandidateId);
+
+  setNetworkInfo(
+    `مسیر اتصال: ${local?.candidateType ?? "نامشخص"} → ${remote?.candidateType ?? "نامشخص"}`
+  );
+};
+
+pc.addEventListener("connectionstatechange", () => {
+  if (pc.connectionState === "connected") {
+    void inspectConnection();
+  }
+});
     pc.onicecandidate = (event) => {
       if (event.candidate) void signal("candidate", event.candidate.toJSON()).catch((e) => setStatus(`ارسال ICE ناموفق: ${e.message}`));
     };
@@ -210,7 +261,11 @@ export default function P2PTest() {
     const channel = dcRef.current;
     if (!file || !channel || channel.readyState !== "open") return;
     if (file.size > 10 * 1024 * 1024) { setStatus("در این نسخه آزمایشی سقف فایل ۱۰ مگابایت است."); return; }
-    setBusy(true); setProgress(0);
+    setBusy(true);
+    setProgress(0);
+    setSpeedInfo("در حال ارسال...");
+    transferStartedRef.current = performance.now();
+
     try {
       channel.send(JSON.stringify({ kind: "file", name: file.name, size: file.size, mime: file.type }));
       let offset = 0;
@@ -264,6 +319,15 @@ export default function P2PTest() {
       {download && <p><a href={download.url} download={download.name}>دانلود فایل دریافتی: {download.name}</a></p>}
     </>}
     <p role="status"><strong>وضعیت:</strong> {status}</p>
+    
+{networkInfo && (
+  <p><strong>شبکه:</strong> {networkInfo}</p>
+)}
+
+{speedInfo && (
+  <p><strong>سرعت واقعی:</strong> {speedInfo}</p>
+)}
+
     {(busy || progress > 0) && <p>پیشرفت: {progress.toLocaleString("fa-IR")}٪</p>}
     <p style={{ opacity: 0.7, fontSize: 13 }}>برای شروع دوباره، صفحه را تازه‌سازی کنید. برای شبکه‌های دارای NAT سخت‌گیرانه، سرور TURN لازم می‌شود.</p>
   </main>;
