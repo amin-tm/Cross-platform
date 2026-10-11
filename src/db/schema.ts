@@ -42,3 +42,18 @@ export const feedback = pgTable("feedback", {
   message: text("message").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const p2pSessions = pgTable("p2p_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  transferId: uuid("transfer_id")
+    .notNull()
+    .references(() => transfers.id, { onDelete: "cascade" }),
+  senderId: uuid("sender_id").notNull(),
+  receiverId: uuid("receiver_id"),
+  status: text("status").notNull().default("waiting"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true })
+    .notNull(),
+});
