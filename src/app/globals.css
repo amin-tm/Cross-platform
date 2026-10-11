@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
-@font-face{font-family:IranYekan;src:url('/fonts/IRANYEKANLIGHTFANUM') format('woff2');font-style:normal;font-weight:500;font-display:swap}
-@font-face{font-family:IranYekan;src:url('/fonts/IRANYEKANMEDIUMFANUM') format('woff2');font-style:normal;font-weight:650;font-display:swap}
-@font-face{font-family:IranYekan;src:url('/fonts/IRANYEKANBOLDFANUM') format('woff2');font-style:normal;font-weight:750;font-display:swap}
-@font-face{font-family:IranYekan;src:url('/fonts/IRANYEKANBLACKFANUM') format('woff2');font-style:normal;font-weight:850;font-display:swap}
+@font-face{font-family:IranYekan;src:url('/fonts/IRANYEKANLIGHTFANUM.woff2') format('woff2');font-style:normal;font-weight:500;font-display:swap}
+@font-face{font-family:IranYekan;src:url('/fonts/IRANYEKANMEDIUMFANUM.woff2') format('woff2');font-style:normal;font-weight:650;font-display:swap}
+@font-face{font-family:IranYekan;src:url('/fonts/IRANYEKANBOLDFANUM.woff2') format('woff2');font-style:normal;font-weight:750;font-display:swap}
+@font-face{font-family:IranYekan;src:url('/fonts/IRANYEKANBLACKFANUM.woff2') format('woff2');font-style:normal;font-weight:850;font-display:swap}
 
 :root{--primary:#5754e8;--primary-hover:#4945d5;--primary-light:#efeeff;--ink:#282d43;--muted:#9094a6;--border:#e9ebf2;--surface:#f7f8fc;--navy:#252b45;--green:#329e82}
 *{box-sizing:border-box}
