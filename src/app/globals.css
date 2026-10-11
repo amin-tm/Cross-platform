@@ -46,6 +46,7 @@ svg{flex-shrink:0}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 3px #7cd6b814}50%{box-shadow:0 0 0 6px #7cd6b814}}
 
 /* A quiet, permanent home for the navigation. */
+.upload-stats {display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 12px; font-size: 12px; color: var(--text-secondary, #64748b); direction: rtl;}
 .app-shell{min-height:100vh}
 .sidebar{position:fixed;right:0;top:0;bottom:0;width:232px;background:#fff;border-left:1px solid var(--border);display:flex;flex-direction:column;padding:30px 21px 17px;z-index:40}
 .sidebar-brand-button{display:block;width:100%;text-align:right;padding:0 8px}
