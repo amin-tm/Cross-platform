@@ -65,44 +65,45 @@ export default function P2PTransfer() {
   }
 
   async function startSender() {
-    setBusy(true);
-    try {
-     const transfer = await createTransfer("send", true);
-      codeRef.current = transfer.code; setCode(transfer.code);
-      roleRef.current = "sender";
-      await action("start", transfer.code);
-      setPhase("waiting"); setStatus("کد را در دستگاه گیرنده وارد کنید.");
-      beginPolling();
-      , { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setRole("sender"); setCode(data.code);
-      makePeer(data.code, "sender");
-    } catch (e) { setDetail(e instanceof Error ? e.message : "خطا"); }
-    finally { setBusy(false); }
+  setBusy(true);
+  try {
+    const res = await fetch("/api/p2p", { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    setRole("sender");
+    setCode(data.code);
+    makePeer(data.code, "sender");
+  } catch (e) {
+    setDetail(e instanceof Error ? e.message : "خطا");
+  } finally {
+    setBusy(false);
   }
+}
 
   async function joinReceiver() {
-    const c = toEn(input);
-    if (c.length !== 6) { setDetail("کد ۶ رقمی را وارد کنید."); return; }
-    setBusy(true);
-    try {
-      // request first (creates the visitor cookie & registers us), then stream
-      const res = const transfer = await createTransfer("send", true);
-      codeRef.current = transfer.code; setCode(transfer.code);
-      roleRef.current = "sender";
-      await action("start", transfer.code);
-      setPhase("waiting"); setStatus("کد را در دستگاه گیرنده وارد کنید.");
-      beginPolling();
-      , { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "request" }) });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setRole("receiver"); setCode(c);
-      makePeer(c, "receiver");
-      setPhase("requested"); setDetail("منتظر تأیید فرستنده…");
-    } catch (e) { setDetail(e instanceof Error ? e.message : "خطا"); }
-    finally { setBusy(false); }
+  const c = toEn(input);
+  if (c.length !== 6) { setDetail("کد ۶ رقمی را وارد کنید."); return; }
+  setBusy(true);
+  try {
+    // request first (creates the visitor cookie & registers us), then stream
+    const res = await fetch(`/api/p2p/${c}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "request" }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    setRole("receiver");
+    setCode(c);
+    makePeer(c, "receiver");
+    setPhase("requested");
+    setDetail("منتظر تأیید فرستنده…");
+  } catch (e) {
+    setDetail(e instanceof Error ? e.message : "خطا");
+  } finally {
+    setBusy(false);
   }
+}
 
   async function accept() {
     setBusy(true);
