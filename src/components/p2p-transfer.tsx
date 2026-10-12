@@ -142,15 +142,6 @@ export default function P2PTransfer() {
     <div className="mx-auto w-full max-w-2xl space-y-6">
       {/* role picker */}
       {!role && (
-      <>
-    {detail && (
-      <p
-        role="alert"
-        className="rounded-xl bg-red-50 p-3 text-sm text-red-700"
-      >
-        {detail}
-      </p>
-    )}
         <div className="grid gap-4 sm:grid-cols-2">
           <button onClick={startSender} disabled={busy} className="rounded-2xl border border-emerald-200 bg-white p-6 text-right shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-50">
             <div className="text-3xl">📤</div>
