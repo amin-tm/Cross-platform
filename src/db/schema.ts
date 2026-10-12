@@ -55,6 +55,7 @@ export const p2pSessions = pgTable("p2p_sessions", {
     .defaultNow(),
   expiresAt: timestamp("expires_at", { withTimezone: true })
     .notNull(),
+  code: text("code").notNull()
 });
 
 // Add bigint and jsonb to the existing drizzle-orm/pg-core import.
