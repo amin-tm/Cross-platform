@@ -59,13 +59,22 @@ export const p2pSessions = pgTable("p2p_sessions", {
 
 // Add bigint and jsonb to the existing drizzle-orm/pg-core import.
 // Append this to src/db/schema.ts:
-export const p2pSignals = pgTable("p2p_signals", {
-  id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
-  sessionId: uuid("session_id").notNull().references(() => p2pSessions.id, { onDelete: "cascade" }),
-  senderId: uuid("sender_id").notNull(),
-  recipientId: uuid("recipient_id").notNull(),
-  signalType: text("signal_type").notNull(),
-  payload: jsonb("payload").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
+export const p2pSignals = pgTable(
+  "p2p_signals",
+  {
+    id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+    sessionId: uuid("session_id").notNull().references(() => p2pSessions.id, { onDelete: "cascade" }),
+    senderId: uuid("sender_id").notNull(),
+    recipientId: uuid("recipient_id").notNull(),
+    signalType: text("signal_type").notNull(),
+    payload: jsonb("payload").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("p2p_signals_session_recipient_id_idx").on(
+      table.sessionId,
+      table.recipientId,
+      table.id
+    ),
+  ]
+);
