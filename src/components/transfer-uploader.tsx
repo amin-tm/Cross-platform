@@ -59,15 +59,59 @@ export default function TransferUploader({ roomCode, onComplete, onBusyChange }:
       if (!uploadCode.current) uploadCode.current = (await createTransfer("send")).code;
       setHasStarted(true);
       let uploaded = files.reduce((sum, file, index) => sum + (completed.current.has(index) ? file.size : 0), 0);
-      for (let index = 0; index < files.length; index++) {
-        if (completed.current.has(index)) continue;
-        if (controller.signal.aborted) throw new DOMException("توقف", "AbortError");
-        const file = files[index];
-        setActiveFile(file.name);
-        await uploadFile(file, uploadCode.current, (loaded) => {const currentBytes = uploaded + loaded; setUploadedBytes(currentBytes); setProgress(total > 0 ? Math.min(99, Math.round((currentBytes / total) * 100)) : Math.round((index / files.length) * 100)); const now = performance.now(); const elapsed = (now - speedSample.current.time) / 1000; if (elapsed >= 1) {const difference = Math.max(0, currentBytes - speedSample.current.bytes); setSpeed(difference / elapsed); speedSample.current = {time: now, bytes: currentBytes,};}}, controller.signal);
-        completed.current.add(index);
-        uploaded += file.size;
-      }
+      const CONCURRENCY = 3;
+
+let completedBytes = 0;
+completed.current.forEach((i) => (completedBytes += files[i].size));
+
+const loadedPerFile = new Map<number, number>();
+const queue = files.map((_, i) => i).filter((i) => !completed.current.has(i));
+
+const updateProgress = () => {
+  let inFlight = 0;
+  loadedPerFile.forEach((v) => (inFlight += v));
+  const currentBytes = completedBytes + inFlight;
+
+  setUploadedBytes(currentBytes);
+  setProgress(total > 0 ? Math.min(99, Math.round((currentBytes / total) * 100)) : 0);
+
+  const now = performance.now();
+  const elapsed = (now - speedSample.current.time) / 1000;
+  if (elapsed >= 1) {
+    setSpeed(Math.max(0, currentBytes - speedSample.current.bytes) / elapsed);
+    speedSample.current = { time: now, bytes: currentBytes };
+  }
+};
+
+const worker = async () => {
+  while (queue.length > 0) {
+    if (controller.signal.aborted) throw new DOMException("توقف", "AbortError");
+    const index = queue.shift()!;
+    const file = files[index];
+    setActiveFile(file.name);
+
+    loadedPerFile.set(index, 0);
+    try {
+      await uploadFile(file, uploadCode.current, (loaded) => {
+        loadedPerFile.set(index, loaded);
+        updateProgress();
+      }, controller.signal);
+    } finally {
+      loadedPerFile.delete(index);
+    }
+
+    completedBytes += file.size;
+    completed.current.add(index);
+    updateProgress();
+  }
+};
+
+try {
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, queue.length) }, worker));
+} catch (err) {
+  controller.abort();
+  throw err;
+}
       const result = await api<Transfer>(`/api/transfers/${uploadCode.current}/complete`, { method: "POST", signal: controller.signal });
       setProgress(100);
       onComplete(result);
