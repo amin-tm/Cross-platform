@@ -1,0 +1,21 @@
+plugins { id 'com.android.application' }
+
+// Supplied by GitHub Actions; do not hardcode the production domain.
+def siteUrl = providers.gradleProperty('polSiteUrl').orElse('https://example.invalid').get()
+if (!siteUrl.matches('https://[A-Za-z0-9.-]+(:[0-9]+)?/?')) {
+    throw new GradleException('polSiteUrl must be an HTTPS origin without a path')
+}
+android {
+    namespace 'ir.pol.transfer'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'ir.pol.transfer'
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName '0.1.0'
+        buildConfigField 'String', 'POL_SITE_URL', '"' + siteUrl.replace('"', '\\"') + '"'
+    }
+    buildFeatures { buildConfig true }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
