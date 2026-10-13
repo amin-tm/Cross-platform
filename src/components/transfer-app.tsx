@@ -46,6 +46,21 @@ export default function TransferApp() {
   const loadingInbox = useRef(false);
 
   const notify = useCallback((message: string, error = false) => setToast({ message, error }), []);
+
+  // POL_NATIVE_SHARE: Switch to Send when Android shares a file into the app.
+  useEffect(() => {
+    const openSharedFiles = () => {
+      const pending = (window as Window & { __polPendingShare?: unknown }).__polPendingShare;
+      if (!Array.isArray(pending) || pending.length === 0) return;
+      setSection("home");
+      setTab("send");
+      setResult(null);
+    };
+    window.addEventListener("pol-native-share", openSharedFiles);
+    openSharedFiles();
+    return () => window.removeEventListener("pol-native-share", openSharedFiles);
+  }, []);
+
   const closeModal = useCallback(() => { setModal(null); setSelected(null); setDeleting(null); }, []);
 
   const loadHistory = useCallback(async () => {

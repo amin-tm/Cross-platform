@@ -24,6 +24,44 @@ export default function TransferUploader({ roomCode, onComplete, onBusyChange }:
   const speedSample = useRef({ time: 0, bytes: 0 });
 
   useEffect(() => () => aborter.current?.abort(), []);
+
+  // POL_NATIVE_SHARE: Receive Android content URIs through a WebView-only stream endpoint.
+  useEffect(() => {
+    type NativeEntry = { name: string; type: string; url: string };
+    type NativeWindow = Window & { __polPendingShare?: NativeEntry[] };
+    let cancelled = false;
+    let processing = false;
+    const consume = async () => {
+      const nativeWindow = window as NativeWindow;
+      const entries = nativeWindow.__polPendingShare;
+      if (processing || !Array.isArray(entries) || entries.length === 0) return;
+      processing = true;
+      try {
+        const received: File[] = [];
+        for (const entry of entries) {
+          if (typeof entry.url !== "string" || !entry.url.startsWith("/__pol_native_share__/")) throw new Error("نشانی فایل اشتراکی نامعتبر است.");
+          const response = await fetch(entry.url, { cache: "no-store" });
+          if (!response.ok) throw new Error("خواندن فایل اشتراکی از اندروید ناموفق بود.");
+          const blob = await response.blob();
+          received.push(new File([blob], entry.name || "shared-file", { type: entry.type || blob.type || "application/octet-stream" }));
+        }
+        if (cancelled) return;
+        if (received.length > MAX_FILE_COUNT || received.reduce((sum, file) => sum + file.size, 0) > MAX_TRANSFER_SIZE) {
+          setError("تعداد یا حجم فایل‌های اشتراکی بیشتر از حد مجاز پُل است.");
+          return;
+        }
+        setFiles(received);
+        setError("");
+        delete nativeWindow.__polPendingShare;
+      } catch (cause) {
+        if (!cancelled) setError(cause instanceof Error ? cause.message : "دریافت فایل اشتراکی ممکن نشد.");
+      } finally { processing = false; }
+    };
+    window.addEventListener("pol-native-share", consume);
+    void consume();
+    return () => { cancelled = true; window.removeEventListener("pol-native-share", consume); };
+  }, []);
+
   useEffect(() => {
     onBusyChange?.(uploading);
     return () => onBusyChange?.(false);
