@@ -1,0 +1,42 @@
+name: Build Pol Android APK
+on:
+  workflow_dispatch:
+    inputs:
+      site_url:
+        description: 'HTTPS URL of the deployed Pol website (e.g. https://example.vercel.app)'
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Validate website URL
+        env:
+          POL_URL: ${{ inputs.site_url }}
+        run: |
+          python3 - <<'PY'
+          import os,urllib.parse
+          u=urllib.parse.urlparse(os.environ['POL_URL'])
+          assert u.scheme=='https' and u.hostname and not u.username and not u.password and not u.fragment and not u.query and u.path in ('','/'), 'Enter an HTTPS site origin only, e.g. https://example.vercel.app'
+          PY
+      - name: Build debug APK
+        env:
+          POL_URL: ${{ inputs.site_url }}
+        run: gradle -p android --no-daemon assembleDebug -PpolSiteUrl="$POL_URL"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pol-android-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
