@@ -2,8 +2,10 @@ import type { Transfer } from "@/lib/shared";
 
 export async function api<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, { cache: "no-store", ...options });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "ارتباط با سرور برقرار نشد.");
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data === null) {
+    throw new Error(data?.error || "ارتباط با سرور برقرار نشد. دوباره تلاش کنید.");
+  }
   return data as T;
 }
 

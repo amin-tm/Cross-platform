@@ -47,7 +47,9 @@ export async function createDownloadUrl(transferId: string, fileId: string, file
 
 export async function deleteStoredFiles(transferId: string, fileIds: string[]) {
   if (!fileIds.length) return;
-  await supabaseAdmin().storage.from(STORAGE_BUCKET).remove(fileIds.map((id) => storagePath(transferId, id)));
+  const { error } = await supabaseAdmin().storage.from(STORAGE_BUCKET)
+    .remove(fileIds.map((id) => storagePath(transferId, id)));
+  if (error) throw new Error(error.message);
 }
 
 export async function statStoredFile(transferId: string, fileId: string) {

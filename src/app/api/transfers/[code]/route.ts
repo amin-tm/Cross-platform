@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { transferFiles, transfers } from "@/db/schema";
 import { apiError, findTransfer, getVisitor, rateLimited, serializeTransfer } from "@/lib/transfer-server";
-import { deleteStoredFiles, isStorageConfigured } from "@/lib/storage";
+import { deleteStoredFiles } from "@/lib/storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,10 +29,8 @@ export async function DELETE(_request: Request, { params }: Context) {
     if (!transfer) return apiError("انتقال پیدا نشد.", 404);
     const visitor = await getVisitor();
     if (visitor !== transfer.ownerId) return apiError("فقط فرستنده می‌تواند این انتقال را حذف کند.", 403);
-    const files = await db.select({ id: transferFiles.id }).from(transferFiles).where(eq(transferFiles.transferId, transfer.id));
-    if (isStorageConfigured()) {
-      await deleteStoredFiles(transfer.id, files.map((file) => file.id)).catch(() => undefined);
-    }
+    const files = await db.select({ id: transferFiles.storageName }).from(transferFiles).where(eq(transferFiles.transferId, transfer.id));
+    await deleteStoredFiles(transfer.id, files.map((file) => file.id));
     await db.delete(transfers).where(eq(transfers.id, transfer.id));
     return Response.json({ ok: true });
   } catch (error) {

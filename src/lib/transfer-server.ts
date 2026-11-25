@@ -32,11 +32,31 @@ export async function findTransfer(code: string) {
   return transfer;
 }
 
-export async function serializeTransfer(transfer: typeof transfers.$inferSelect, visitor: string | null) {
-  const files = await db
-    .select({ id: transferFiles.id, name: transferFiles.name, size: transferFiles.size, mime: transferFiles.mime })
+type TransferRow = typeof transfers.$inferSelect;
+type FileSummary = Pick<typeof transferFiles.$inferSelect, "id" | "name" | "size" | "mime">;
+
+export async function serializeTransfers(items: TransferRow[], visitor: string | null) {
+  if (!items.length) return [];
+  const rows = await db
+    .select({ id: transferFiles.id, name: transferFiles.name, size: transferFiles.size, mime: transferFiles.mime, transferId: transferFiles.transferId })
     .from(transferFiles)
-    .where(eq(transferFiles.transferId, transfer.id));
+    .where(and(inArray(transferFiles.transferId, items.map((item) => item.id)), eq(transferFiles.status, "ready")))
+    .orderBy(transferFiles.createdAt, transferFiles.id);
+  const filesByTransfer = new Map<string, FileSummary[]>();
+  for (const { transferId, ...file } of rows) {
+    const files = filesByTransfer.get(transferId) ?? [];
+    files.push(file);
+    filesByTransfer.set(transferId, files);
+  }
+  return items.map((item) => transferResponse(item, visitor, filesByTransfer.get(item.id) ?? []));
+}
+
+export async function serializeTransfer(transfer: TransferRow, visitor: string | null) {
+  const [result] = await serializeTransfers([transfer], visitor);
+  return result;
+}
+
+function transferResponse(transfer: TransferRow, visitor: string | null, files: FileSummary[]) {
   return {
     ...transfer,
     ownerId: undefined,
@@ -68,25 +88,28 @@ export async function cleanupExpired() {
   if (Date.now() - lastCleanup < 10 * 60 * 1000) return;
   lastCleanup = Date.now();
   try {
-    const expired = await db.select().from(transfers).where(lt(transfers.expiresAt, new Date()));
+    const expired = await db.select({ id: transfers.id }).from(transfers)
+      .where(lt(transfers.expiresAt, new Date())).orderBy(transfers.expiresAt).limit(25);
     if (!expired.length) return;
     const expiredIds = expired.map((item) => item.id);
     const files = await db
-      .select({ id: transferFiles.id, transferId: transferFiles.transferId })
+      .select({ id: transferFiles.storageName, transferId: transferFiles.transferId })
       .from(transferFiles)
       .where(inArray(transferFiles.transferId, expiredIds));
-    if (isStorageConfigured()) {
-      const grouped = new Map<string, string[]>();
-      for (const file of files) {
-        const list = grouped.get(file.transferId) || [];
-        list.push(file.id);
-        grouped.set(file.transferId, list);
-      }
-      for (const [transferId, ids] of grouped) {
-        await deleteStoredFiles(transferId, ids).catch(() => undefined);
+    const grouped = new Map<string, string[]>();
+    for (const file of files) {
+      const list = grouped.get(file.transferId) ?? [];
+      list.push(file.id);
+      grouped.set(file.transferId, list);
+    }
+    for (const { id } of expired) {
+      try {
+        await deleteStoredFiles(id, grouped.get(id) ?? []);
+        await db.delete(transfers).where(and(eq(transfers.id, id), lt(transfers.expiresAt, new Date())));
+      } catch (error) {
+        console.error("Expired transfer cleanup failed:", id, error);
       }
     }
-    await db.delete(transfers).where(and(inArray(transfers.id, expiredIds), lt(transfers.expiresAt, new Date())));
   } catch (error) {
     console.error("cleanupExpired:", error);
   }

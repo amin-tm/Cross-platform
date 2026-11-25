@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 import { db } from "@/db";
 import { transfers } from "@/db/schema";
 import { apiError, findTransfer, getVisitor, serializeTransfer } from "@/lib/transfer-server";
@@ -14,8 +14,17 @@ export async function POST(_request: Request, { params }: { params: Promise<{ co
     const permitted = transfer.kind === "inbox" ? transfer.contributorId === visitor : transfer.ownerId === visitor;
     if (!visitor || !permitted) return apiError("اجازهٔ تکمیل این انتقال را ندارید.", 403);
     if (transfer.fileCount === 0) return apiError("ابتدا یک فایل انتخاب کنید.");
-    const [updated] = await db.update(transfers).set({ status: "ready", completedAt: new Date(), expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) }).where(eq(transfers.id, transfer.id)).returning();
-    return Response.json(await serializeTransfer(updated, visitor));
+    if (transfer.status === "ready") return Response.json(await serializeTransfer(transfer, visitor));
+    const now = new Date();
+    const [updated] = await db.update(transfers)
+      .set({ status: "ready", completedAt: now, expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000) })
+      .where(and(eq(transfers.id, transfer.id), eq(transfers.status, "pending"), gt(transfers.expiresAt, now)))
+      .returning();
+    const result = updated ?? await findTransfer(code);
+    if (!result || result.id !== transfer.id || result.status !== "ready") {
+      return apiError("این انتقال دیگر قابل تکمیل نیست.", 409);
+    }
+    return Response.json(await serializeTransfer(result, visitor));
   } catch (error) {
     console.error("Complete transfer:", error);
     return apiError("تکمیل انتقال ممکن نشد. دوباره تلاش کنید.", 500);

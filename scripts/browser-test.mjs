@@ -69,7 +69,7 @@ await phonePage.goto(`${base}/r/${sentTransfer.code}`);
 await phonePage.getByText('فایل‌ها آمادهٔ دریافت‌اند').waitFor();
 await phonePage.screenshot({ path: 'artifacts/phone-download.png', fullPage: true });
 assert.equal(await phonePage.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
-const download = await phone.request.get(`${base}/api/transfers/${sentTransfer.code}/download`);
+const download = await phone.request.get(`${base}/api/transfers/${sentTransfer.code}/download?file=${sentTransfer.files[0].id}`);
 assert.equal((await download.body()).toString(), 'A working file transfer from the browser.');
 for (const item of history.transfers) await desktop.request.delete(`${base}/api/transfers/${item.code}`);
 assert.deepEqual(errors, []);

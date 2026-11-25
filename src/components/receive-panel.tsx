@@ -23,26 +23,30 @@ export default function ReceivePanel() {
   const [transfer, setTransfer] = useState<Transfer | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const pendingCode = transfer?.status === "pending" ? transfer.code : null;
   useEffect(() => {
-    if (!transfer || transfer.status !== "pending") return;
-
+    if (!pendingCode) return;
+    const controller = new AbortController();
+    let inFlight = false;
     const timer = setInterval(async () => {
+      if (document.hidden || inFlight) return;
+      inFlight = true;
       try {
-        const next = await api<Transfer>(
-          `/api/transfers/${transfer.code}`
-        );
+        const next = await api<Transfer>(`/api/transfers/${pendingCode}`, { signal: controller.signal });
+        if (controller.signal.aborted) return;
         setTransfer(next);
+        setError("");
       } catch (cause) {
-        setError(
-          cause instanceof Error
-            ? cause.message
-            : "اتصال برقرار نشد."
-        );
+        if (!controller.signal.aborted) {
+          setError(cause instanceof Error ? cause.message : "اتصال برقرار نشد.");
+        }
+      } finally {
+        inFlight = false;
       }
     }, 4000);
 
-    return () => clearInterval(timer);
-  }, [transfer]);
+    return () => { controller.abort(); clearInterval(timer); };
+  }, [pendingCode]);
 
   async function receive(event: FormEvent) {
     event.preventDefault();

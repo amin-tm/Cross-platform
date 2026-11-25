@@ -454,3 +454,33 @@ svg{flex-shrink:0}
 @media(max-width:740px){.page-heading p{color:#8c91a4;font-size:11.5px}.dropzone-content>p{font-size:11px;color:#9993ae}.upload-limits{font-size:9px}.connection-description{font-size:12px;color:#adb7ce}.qr-caption{font-size:10px;color:#a9b4cf}.connection-link{font-size:11px}.connection-footer{font-size:9px;color:#929fb9}.feature-card h3{font-size:10.5px}.feature-card p{font-size:8.5px;color:#9a9db2}.history-empty h3{font-size:12px;color:#9290a5}.history-empty p{font-size:9px}.section-title h2{font-size:12px}.uploader-footer{font-size:9px;color:#9b9aac}.history-card-footer{font-size:8px}.history-footer-private{font-size:7px}.shared-intro p{font-size:11px;color:#9d93ae}.shared-card .dropzone-content>p{font-size:11px}.shared-card .uploader-footer{font-size:8px}.shared-header-note{font-size:9px}.shared-card-heading{font-size:9px}.shared-loading p,.shared-error p,.shared-sent p{font-size:11px}.shared-platforms{font-size:9px}.shared-footer{font-size:9px}}
 @media(max-width:480px){.page-heading p{font-size:11px}.uploader-footer{font-size:8px}.feature-card h3{font-size:10px}.feature-card p{font-size:8px}.history-card-footer{font-size:7px}.history-footer-private{font-size:6px}.history-empty p{font-size:8.5px}.history-card-footer>span:first-of-type{max-width:235px}.shared-intro p{font-size:11px}.selected-header>span{font-size:10px}.selected-header .text-button{font-size:9px}.file-details b{font-size:11px}.file-details>span{font-size:9px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+.mobile-connection-link, .upload-touch-heading { display: none; }
+.connection-card { scroll-margin-top: 80px; }
+.page-heading p, .dropzone-content > p, .history-card-footer { color: #545b73; }
+.connection-description, .qr-caption, .connection-footer { color: #c2c6dd; }
+.history-card-footer { font-size: 12px; flex-wrap: wrap; row-gap: 4px; }
+.history-footer-private { font-size: inherit; color: inherit; }
+.select-file-button { min-height: 44px; }
+
+@media (max-width: 740px) {
+  .page-heading p, .dropzone-content > p, .connection-description { font-size: 14px; }
+  .mobile-connection-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 14px;
+    margin-bottom: 14px;
+    border: 1px solid #d7d4f6;
+    border-radius: 10px;
+    color: #403ab0;
+    background: #fff;
+    font-size: 13px;
+  }
+}
+
+@media (pointer: coarse) {
+  .upload-pointer-heading { display: none; }
+  .upload-touch-heading { display: inline; }
+}

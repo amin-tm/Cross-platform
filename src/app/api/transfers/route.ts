@@ -9,6 +9,7 @@ import {
   getVisitor,
   rateLimited,
   serializeTransfer,
+  serializeTransfers,
 } from "@/lib/transfer-server";
 
 export const runtime = "nodejs";
@@ -36,9 +37,7 @@ export async function GET() {
       .limit(50);
 
     return Response.json({
-      transfers: await Promise.all(
-        items.map((item) => serializeTransfer(item, visitor))
-      ),
+      transfers: await serializeTransfers(items, visitor),
     });
   } catch (error) {
     console.error("Transfer history:", error);
