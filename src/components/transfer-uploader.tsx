@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Check, CircleAlert, FilePlus2, LoaderCircle, LockKeyhole, Plus, X } from "lucide-react";
-import { api, createTransfer, uploadFile } from "@/lib/client";
+import { api, createTransfer, RESUMABLE_CHUNK_SIZE, uploadFile, type UploadAttempt, type UploadPhase } from "@/lib/client";
 import { formatSize, MAX_FILE_COUNT, MAX_TRANSFER_SIZE, type Transfer } from "@/lib/shared";
 import { FileGlyph, UploadIllustration } from "@/components/ui";
 
@@ -12,6 +12,8 @@ export default function TransferUploader({ roomCode, onComplete, onBusyChange }:
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [activeFile, setActiveFile] = useState("");
+  const [phase, setPhase] = useState<UploadPhase>("preparing");
+  const attempts = useRef(new Map<number, UploadAttempt>());
   const [error, setError] = useState("");
   const [hasStarted, setHasStarted] = useState(false);
   const input = useRef<HTMLInputElement>(null);
@@ -86,6 +88,7 @@ export default function TransferUploader({ roomCode, onComplete, onBusyChange }:
     if (!files.length || uploading) return;
     setError("");
     setUploading(true);
+    setPhase("preparing");
     setSpeed(0);
     let speedSample = {
       time: performance.now(),
@@ -94,10 +97,17 @@ export default function TransferUploader({ roomCode, onComplete, onBusyChange }:
     const controller = new AbortController();
     aborter.current = controller;
     try {
-      if (!uploadCode.current) uploadCode.current = (await createTransfer("send")).code;
+      if (!uploadCode.current) uploadCode.current = (await createTransfer("send", false, controller.signal)).code;
       setHasStarted(true);
 
-      const CONCURRENCY = 3;
+      const concurrency = files.some((file) => file.size > RESUMABLE_CHUNK_SIZE) ? 1 : 3;
+      const phases = new Map<number, UploadPhase>();
+      const updatePhase = (index: number, next?: UploadPhase) => {
+        if (next) phases.set(index, next);
+        else phases.delete(index);
+        const current = [...phases.values()];
+        setPhase(current.includes("uploading") ? "uploading" : current.includes("preparing") ? "preparing" : "verifying");
+      };
 
       let completedBytes = 0;
       completed.forEach((i) => (completedBytes += files[i].size));
@@ -130,12 +140,15 @@ export default function TransferUploader({ roomCode, onComplete, onBusyChange }:
 
           loadedPerFile.set(index, 0);
           try {
-            await uploadFile(file, uploadCode.current, (loaded) => {
+            const attempt = attempts.current.get(index) ?? {};
+            attempts.current.set(index, attempt);
+            await uploadFile(file, uploadCode.current, attempt, (loaded) => {
               loadedPerFile.set(index, loaded);
               updateProgress();
-            }, controller.signal);
+            }, (next) => updatePhase(index, next), controller.signal);
           } finally {
             loadedPerFile.delete(index);
+            updatePhase(index);
           }
 
           completedBytes += file.size;
@@ -144,7 +157,7 @@ export default function TransferUploader({ roomCode, onComplete, onBusyChange }:
         }
       };
 
-      const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, worker);
+      const workers = Array.from({ length: Math.min(concurrency, queue.length) }, worker);
       try {
         await Promise.all(workers);
       } catch (error) {
@@ -152,6 +165,7 @@ export default function TransferUploader({ roomCode, onComplete, onBusyChange }:
         await Promise.allSettled(workers);
         throw error;
       }
+      setPhase("verifying");
       const result = await api<Transfer>(`/api/transfers/${uploadCode.current}/complete`, { method: "POST", signal: controller.signal });
       setProgress(100);
       onComplete(result);
@@ -165,7 +179,7 @@ export default function TransferUploader({ roomCode, onComplete, onBusyChange }:
 
   return <div className="uploader"><input ref={input} type="file" multiple className="visually-hidden" aria-label="انتخاب فایل برای ارسال" onChange={(event) => { if (event.target.files) addFiles(event.target.files); event.target.value = ""; }}/>
     <div className={`upload-dropzone ${dragging ? "is-dragging" : ""} ${files.length ? "has-files" : ""}`} onDragOver={(event) => { event.preventDefault(); if (!hasStarted) setDragging(true); }} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setDragging(false); }} onDrop={(event) => { event.preventDefault(); setDragging(false); addFiles(event.dataTransfer.files); }}>
-      {!files.length ? <div className="dropzone-content"><UploadIllustration/><h3><span className="upload-pointer-heading">{dragging ? "رها کنید، بقیه‌اش با پُل" : "فایل‌ها را اینجا رها کنید"}</span><span className="upload-touch-heading">فایل‌ها را برای ارسال انتخاب کنید</span></h3><p>یا با یک کلیک، فایل‌های خود را انتخاب کنید</p><button className="button button-primary select-file-button" onClick={() => input.current?.click()}><Plus size={18}/><span>انتخاب فایل‌ها</span></button><div className="upload-limits"><span>همهٔ فرمت‌ها</span><i/><span>تا ۲ گیگابایت</span></div></div> : <div className="selected-files"><div className="selected-header"><span><FilePlus2 size={17}/>{files.length.toLocaleString("fa-IR")} فایل انتخاب شده</span>{!hasStarted && <button className="text-button" onClick={() => input.current?.click()}><Plus size={15}/>افزودن فایل</button>}</div><div className="upload-file-list">{files.map((file, index) => <div className="upload-file" key={`${file.name}-${file.lastModified}-${index}`}><FileGlyph name={file.name}/><div className="file-details"><b dir="auto">{file.name}</b><span dir="ltr">{formatSize(file.size)}</span></div>{completed.has(index) ? <Check size={18} className="success-icon"/> : !hasStarted ? <button className="icon-button small" aria-label={`حذف ${file.name}`} onClick={() => setFiles((current) => current.filter((_, i) => i !== index))}><X size={15}/></button> : <span className="file-waiting-dot"/>}</div>)}</div><div className="upload-summary"><span>حجم کل</span><strong dir="ltr">{formatSize(total)}</strong></div>{uploading ? <div className="upload-progress"><div className="progress-label"><span><LoaderCircle size={15} className="spin"/>در حال ارسال…</span><strong>{progress.toLocaleString("fa-IR")}٪</strong></div><div className="upload-stats"><span> سرعت: {speed > 0 ? `${(speed / 1048576).toFixed(2)} MB/s` : "در حال محاسبه"}</span><span>{formatSize(uploadedBytes)} از {formatSize(total)}
+      {!files.length ? <div className="dropzone-content"><UploadIllustration/><h3><span className="upload-pointer-heading">{dragging ? "رها کنید، بقیه‌اش با پُل" : "فایل‌ها را اینجا رها کنید"}</span><span className="upload-touch-heading">فایل‌ها را برای ارسال انتخاب کنید</span></h3><p>یا با یک کلیک، فایل‌های خود را انتخاب کنید</p><button className="button button-primary select-file-button" onClick={() => input.current?.click()}><Plus size={18}/><span>انتخاب فایل‌ها</span></button><div className="upload-limits"><span>همهٔ فرمت‌ها</span><i/><span>تا ۲ گیگابایت</span></div></div> : <div className="selected-files"><div className="selected-header"><span><FilePlus2 size={17}/>{files.length.toLocaleString("fa-IR")} فایل انتخاب شده</span>{!hasStarted && <button className="text-button" onClick={() => input.current?.click()}><Plus size={15}/>افزودن فایل</button>}</div><div className="upload-file-list">{files.map((file, index) => <div className="upload-file" key={`${file.name}-${file.lastModified}-${index}`}><FileGlyph name={file.name}/><div className="file-details"><b dir="auto">{file.name}</b><span dir="ltr">{formatSize(file.size)}</span></div>{completed.has(index) ? <Check size={18} className="success-icon"/> : !hasStarted ? <button className="icon-button small" aria-label={`حذف ${file.name}`} onClick={() => setFiles((current) => current.filter((_, i) => i !== index))}><X size={15}/></button> : <span className="file-waiting-dot"/>}</div>)}</div><div className="upload-summary"><span>حجم کل</span><strong dir="ltr">{formatSize(total)}</strong></div>{uploading ? <div className="upload-progress"><div className="progress-label"><span role="status"><LoaderCircle size={15} className="spin"/>{phase === "preparing" ? "در حال آماده‌سازی فایل…" : phase === "verifying" ? "در حال تأیید فایل…" : "در حال ارسال…"}</span><strong>{progress.toLocaleString("fa-IR")}٪</strong></div><div className="upload-stats"><span> سرعت: {speed > 0 ? `${(speed / 1048576).toFixed(2)} MB/s` : "در حال محاسبه"}</span><span>{formatSize(uploadedBytes)} از {formatSize(total)}
   </span><span> زمان باقی‌مانده: {speed > 0 ? `${Math.ceil((total - uploadedBytes) / speed)} ثانیه`
         : "در حال محاسبه" }</span></div><div className="progress-track"><div style={{ width: `${progress}%` }}/></div><div className="progress-bottom"><span dir="auto">{activeFile}</span><button onClick={() => aborter.current?.abort()}>توقف ارسال</button></div></div> : <button className="button button-primary full-width" onClick={startUpload}><ArrowUp size={18}/>{hasStarted ? "ادامه ارسال" : "ارسال فایل‌ها"}<span className="button-file-count">{files.length.toLocaleString("fa-IR")}</span></button>}</div>}
     </div>{error && <div className="inline-error" role="alert"><CircleAlert size={16}/><span>{error}</span></div>}<div className="uploader-footer"><LockKeyhole size={14}/><span>فایل‌ها خصوصی‌اند و پس از ۲۴ ساعت حذف می‌شوند.</span><span className="footer-info" title="هر کسی که لینک یا کد را داشته باشد می‌تواند فایل‌ها را دریافت کند.">i</span></div>

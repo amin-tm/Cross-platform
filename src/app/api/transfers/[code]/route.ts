@@ -15,7 +15,7 @@ export async function GET(request: Request, { params }: Context) {
     const { code } = await params;
     const transfer = await findTransfer(code);
     if (!transfer) return apiError("این کد پیدا نشد یا زمان دریافت آن به پایان رسیده است.", 404);
-    return Response.json(await serializeTransfer(transfer, await getVisitor()), { headers: { "Cache-Control": "no-store" } });
+    return Response.json(await serializeTransfer(transfer, await getVisitor(true)), { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Find transfer:", error);
     return apiError("دریافت اطلاعات انتقال ممکن نشد.", 500);

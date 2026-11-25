@@ -90,7 +90,7 @@ export default function TransferApp() {
       const ua = navigator.userAgent;
       setDevicePlatform(/Android/.test(ua) ? "Android · مرورگر وب" : /iPhone|iPad/.test(ua) ? "iOS · Safari" : /Windows/.test(ua) ? "Windows · مرورگر وب" : /Macintosh/.test(ua) ? "macOS · مرورگر وب" : "مرورگر وب");
       try { const name = localStorage.getItem("pol_device_name"); if (name) setDeviceName(name); } catch { /* storage unavailable */ }
-      void loadHistory().then(() => { if (active) return loadInbox(); });
+      void loadInbox().then(() => { if (active) return loadHistory(); });
     });
     const connectivity = () => setOnline(navigator.onLine);
     const install = (event: Event) => { event.preventDefault(); setInstallPrompt(event as InstallPrompt); };

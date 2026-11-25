@@ -1,5 +1,6 @@
 
 import { randomInt } from "node:crypto";
+import { after } from "next/server";
 import { and, desc, eq, gt, or } from "drizzle-orm";
 import { db } from "@/db";
 import { transfers } from "@/db/schema";
@@ -18,7 +19,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const visitor = await getVisitor(true);
-    await cleanupExpired();
+    after(cleanupExpired);
 
     const items = await db
       .select()
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
     }
 
     const visitor = await getVisitor(true);
-    await cleanupExpired();
+    after(cleanupExpired);
 
     if (kind === "inbox" && !body.fresh) {
       const [existing] = await db

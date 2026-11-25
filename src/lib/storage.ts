@@ -34,7 +34,20 @@ export async function createUploadTicket(transferId: string, fileId: string) {
     .from(STORAGE_BUCKET)
     .createSignedUploadUrl(storagePath(transferId, fileId));
   if (error || !data) throw new Error(error?.message || "Failed to create signed upload URL");
-  return { path: data.path, token: data.token, signedUrl: data.signedUrl };
+  const endpoint = new URL("/storage/v1/upload/resumable/sign", url);
+  if (/^[a-z0-9]+\.supabase\.co$/.test(endpoint.hostname)) {
+    endpoint.hostname = endpoint.hostname.replace(".supabase.co", ".storage.supabase.co");
+  }
+  return {
+    path: data.path,
+    token: data.token,
+    signedUrl: data.signedUrl,
+    resumable: {
+      endpoint: endpoint.href,
+      bucket: STORAGE_BUCKET,
+      publishableKey: process.env.SUPABASE_PUBLISHABLE_KEY,
+    },
+  };
 }
 
 export async function createDownloadUrl(transferId: string, fileId: string, filename: string, expiresIn = 60) {

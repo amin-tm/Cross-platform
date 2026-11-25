@@ -85,42 +85,56 @@ export function rateLimited(request: Request, action: string, limit = 60) {
 
 let lastCleanup = 0;
 export async function cleanupExpired() {
-  if (Date.now() - lastCleanup < 10 * 60 * 1000) return;
+  if (process.env.CRON_SECRET || Date.now() - lastCleanup < 10 * 60 * 1000) return;
   lastCleanup = Date.now();
-  try {
-    const expired = await db.select({ id: transfers.id }).from(transfers)
-      .where(lt(transfers.expiresAt, new Date())).orderBy(transfers.expiresAt).limit(25);
-    if (!expired.length) return;
-    const expiredIds = expired.map((item) => item.id);
-    const files = await db
-      .select({ id: transferFiles.storageName, transferId: transferFiles.transferId })
-      .from(transferFiles)
-      .where(inArray(transferFiles.transferId, expiredIds));
-    const grouped = new Map<string, string[]>();
-    for (const file of files) {
-      const list = grouped.get(file.transferId) ?? [];
-      list.push(file.id);
-      grouped.set(file.transferId, list);
-    }
-    for (const { id } of expired) {
-      try {
-        await deleteStoredFiles(id, grouped.get(id) ?? []);
-        await db.delete(transfers).where(and(eq(transfers.id, id), lt(transfers.expiresAt, new Date())));
-      } catch (error) {
-        console.error("Expired transfer cleanup failed:", id, error);
-      }
-    }
-  } catch (error) {
-    console.error("cleanupExpired:", error);
-  }
+  await purgeExpiredTransfers().catch((error) => console.error("cleanupExpired:", error));
 }
 
+export async function purgeExpiredTransfers() {
+  const expired = await db.select({ id: transfers.id }).from(transfers)
+    .where(lt(transfers.expiresAt, new Date())).orderBy(transfers.expiresAt).limit(25);
+  if (!expired.length) return { deleted: 0, failed: 0 };
+  const expiredIds = expired.map((item) => item.id);
+  const files = await db
+    .select({ id: transferFiles.storageName, transferId: transferFiles.transferId })
+    .from(transferFiles)
+    .where(inArray(transferFiles.transferId, expiredIds));
+  const grouped = new Map<string, string[]>();
+  for (const file of files) {
+    const list = grouped.get(file.transferId) ?? [];
+    list.push(file.id);
+    grouped.set(file.transferId, list);
+  }
+  let failed = 0;
+  for (const { id } of expired) {
+    try {
+      await deleteStoredFiles(id, grouped.get(id) ?? []);
+      await db.delete(transfers).where(and(eq(transfers.id, id), lt(transfers.expiresAt, new Date())));
+    } catch (error) {
+      failed++;
+      console.error("Expired transfer cleanup failed:", id, error);
+    }
+  }
+  return { deleted: expired.length - failed, failed };
+}
+
+let bucketReady: Promise<void> | undefined;
 export async function ensureBucket() {
   if (!isStorageConfigured()) return;
-  const admin = supabaseAdmin();
-  const { data } = await admin.storage.getBucket(STORAGE_BUCKET);
-  if (data) return;
-  await admin.storage.createBucket(STORAGE_BUCKET, { public: false, fileSizeLimit: null });
+  bucketReady ??= (async () => {
+    const admin = supabaseAdmin();
+    const { data } = await admin.storage.getBucket(STORAGE_BUCKET);
+    if (data) return;
+    const { error } = await admin.storage.createBucket(STORAGE_BUCKET, { public: false, fileSizeLimit: null });
+    if (error) {
+      const existing = await admin.storage.getBucket(STORAGE_BUCKET);
+      if (!existing.data) throw new Error(error.message);
+    }
+  })().catch((error) => {
+    bucketReady = undefined;
+    throw error;
+  });
+  await bucketReady;
 }
 
 export function apiError(message: string, status = 400) {
