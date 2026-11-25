@@ -16,7 +16,8 @@ import { api, copyText } from "@/lib/client";
 import { normalizeCode, type Transfer } from "@/lib/shared";
 import { TransferDownloads } from "@/components/transfer-downloads";
 
-export default function ReceivePanel() {
+export default function ReceivePanel({ mode = "receive" }: { mode?: "receive" | "connect" }) {
+  const connecting = mode === "connect";
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -69,6 +70,10 @@ export default function ReceivePanel() {
         return;
       }
 
+      if (connecting) {
+        setError("این کد برای ارسال به کامپیوتر فعال نیست. کد تازه‌ای از کامپیوتر بگیرید.");
+        return;
+      }
       setTransfer(result);
     } catch (cause) {
       setError(
@@ -198,19 +203,19 @@ export default function ReceivePanel() {
         <KeyRound size={31} strokeWidth={1.6} />
       </div>
 
-      <h3>دریافت با کد اتصال</h3>
+      <h3>{connecting ? "اتصال به کامپیوتر" : "دریافت با کد اتصال"}</h3>
 
       <p>
-        کد ۶ رقمی فرستنده را وارد کنید.
-        <br />
-        متن یا فایل ارسال‌شده نمایش داده می‌شود.
+        {connecting
+          ? "کد ۶ رقمی روی کامپیوتر را وارد کنید تا بتوانید فایل‌ها را بفرستید."
+          : "کد ۶ رقمی فرستنده را وارد کنید تا فایل یا متن را ببینید."}
       </p>
 
       <label
         htmlFor="receive-code"
         className="visually-hidden"
       >
-        کد ۶ رقمی دریافت یا لینک انتقال
+        {connecting ? "کد ۶ رقمی کامپیوتر" : "کد ۶ رقمی دریافت یا لینک انتقال"}
       </label>
 
       <input
@@ -246,7 +251,7 @@ export default function ReceivePanel() {
         ) : (
           <Download size={17} />
         )}
-        دریافت
+        {connecting ? "اتصال" : "دریافت"}
       </button>
 
       {error && (

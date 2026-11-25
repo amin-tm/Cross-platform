@@ -28,7 +28,13 @@ export function FileGlyph({ name, size = 21 }: { name: string; size?: number }) 
   return <span className={`file-glyph ${image ? "file-image" : video ? "file-video" : audio ? "file-audio" : archive ? "file-archive" : "file-document"}`}><Icon size={size} strokeWidth={1.7}/></span>;
 }
 
-export function Modal({ title, children, onClose, wide = false }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean }) {
+export function Modal({ title, children, onClose, wide = false, sheet = false }: {
+  title: string;
+  children: ReactNode;
+  onClose: () => void;
+  wide?: boolean;
+  sheet?: boolean;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
@@ -51,5 +57,5 @@ export function Modal({ title, children, onClose, wide = false }: { title: strin
     document.addEventListener("keydown", keyHandler);
     return () => { document.body.style.overflow = oldOverflow; document.removeEventListener("keydown", keyHandler); previous?.focus(); };
   }, [onClose]);
-  return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className={`modal ${wide ? "modal-wide" : ""}`} ref={ref} role="dialog" aria-modal="true" aria-label={title}><div className="modal-header"><h2>{title}</h2><button className="icon-button" aria-label="بستن پنجره" onClick={onClose}><X size={20}/></button></div>{children}</div></div>;
+  return <div className={`modal-backdrop ${sheet ? "modal-sheet-backdrop" : ""}`} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className={`modal ${wide ? "modal-wide" : ""} ${sheet ? "modal-sheet" : ""}`} ref={ref} role="dialog" aria-modal="true" aria-label={title}><div className="modal-header"><h2>{title}</h2><button className="icon-button" aria-label="بستن پنجره" onClick={onClose}><X size={20}/></button></div>{children}</div></div>;
 }

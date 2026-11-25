@@ -62,6 +62,7 @@ function transferResponse(transfer: TransferRow, visitor: string | null, files: 
     ownerId: undefined,
     contributorId: undefined,
     isOwner: transfer.ownerId === visitor,
+    hasContributor: transfer.ownerId === visitor && transfer.kind === "inbox" && Boolean(transfer.contributorId),
     files,
   };
 }

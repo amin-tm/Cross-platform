@@ -21,6 +21,7 @@ export type Transfer = {
   expiresAt: string;
   completedAt: string | null;
   isOwner?: boolean;
+  hasContributor?: boolean;
   files: TransferFile[];
 };
 

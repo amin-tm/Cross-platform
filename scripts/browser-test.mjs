@@ -31,8 +31,10 @@ await phonePage.screenshot({ path: 'artifacts/phone-upload.png', fullPage: true 
 assert.equal(await phonePage.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
 await phonePage.locator('input[type=file]').setInputFiles({ name: 'from-android.txt', mimeType: 'text/plain', buffer: Buffer.from('Sent from the phone without installing or signing in.') });
 await phonePage.getByRole('button', { name: 'ارسال فایل‌ها', exact: false }).click();
-await phonePage.getByText('به همین راحتی، فایل‌ها رسیدند!').waitFor();
+await phonePage.getByText('فایل‌ها به مقصد رسیدند').waitFor();
+await page.bringToFront();
 await page.getByText('فایل‌ها رسیدند!', { exact: true }).waitFor({ timeout: 15000 });
+await page.getByRole('link', { name: 'دانلود from-android.txt' }).waitFor();
 await page.locator('.main-nav').getByRole('button', { name: 'انتقال‌های من' }).click();
 await page.getByPlaceholder('جست‌وجوی فایل یا کد…').fill('from-android');
 await page.getByText('from-android.txt', { exact: true }).waitFor();
@@ -46,7 +48,7 @@ await page.locator('.sidebar-device').getByText('کامپیوتر من').waitFor
 await page.locator('.main-nav').getByRole('button', { name: 'راهنمای استفاده' }).click();
 await page.getByText('طرف مقابل باید پُل را نصب کند؟', { exact: true }).click();
 assert.equal(await page.locator('.faq-card details').first().getAttribute('open'), '');
-await page.locator('.secondary-nav').getByRole('button', { name: 'بازخورد شما' }).click();
+await page.getByRole('button', { name: 'ارسال بازخورد' }).click();
 await page.getByLabel('پیام شما', { exact: true }).fill('آزمایش مرورگر: انتقال خیلی راحت انجام شد.');
 await page.getByRole('button', { name: 'ارسال بازخورد', exact: true }).click();
 await page.getByRole('status').getByText('ممنون! بازخورد شما ثبت شد.').waitFor();
@@ -54,13 +56,17 @@ await page.getByRole('status').getByText('ممنون! بازخورد شما ثب
 const mobileHome = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 const mobilePage = await mobileHome.newPage();
 await mobilePage.goto(base);
-await mobilePage.waitForFunction(() => document.querySelector('.connection-code')?.textContent?.match(/\d{6}/));
+await mobilePage.getByRole('button', { name: 'انتخاب فایل‌ها' }).waitFor();
+assert.equal(await mobilePage.locator('.pairing-card').isVisible(), false);
 await mobilePage.evaluate(() => document.fonts.ready);
 await mobilePage.screenshot({ path: 'artifacts/mobile.png', fullPage: true });
 assert.equal(await mobilePage.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false);
-await mobilePage.getByRole('button', { name: 'باز کردن منو' }).click();
-await mobilePage.locator('.main-nav').getByRole('button', { name: 'انتقال‌های من' }).click();
-assert.equal(await mobilePage.locator('.sidebar-open').count(), 0);
+const mobileNav = mobilePage.getByRole('navigation', { name: 'منوی موبایل' });
+assert.equal(await mobileNav.getByRole('button').count(), 4);
+await mobileNav.getByRole('button', { name: 'تنظیمات' }).click();
+await mobilePage.getByRole('dialog', { name: 'تنظیمات این دستگاه' }).getByRole('button', { name: 'بستن پنجره' }).click();
+await mobileNav.getByRole('button', { name: 'تاریخچه' }).click();
+assert.equal(await mobileNav.getByRole('button', { name: 'تاریخچه' }).getAttribute('aria-current'), 'page');
 
 const historyResponse = await desktop.request.get(`${base}/api/transfers`);
 const history = await historyResponse.json();

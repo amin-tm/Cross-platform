@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Check, CheckCircle2, Clock3, Copy, Download, Link2, LoaderCircle, LockKeyhole, Share2 } from "lucide-react";
+import { ArrowLeft, Check, Clock3, Copy, Download, Link2, LoaderCircle, LockKeyhole, Share2 } from "lucide-react";
 import { formatSize, type Transfer, type TransferFile } from "@/lib/shared";
 import { FileGlyph } from "@/components/ui";
-import QRImage from "@/components/qr-code";
 
 async function triggerBrowserDownload(url: string, filename: string, index: number) {
   const response = await fetch(url, { redirect: "follow" });
@@ -50,12 +49,48 @@ export function TransferDownloads({ transfer }: { transfer: Transfer }) {
   return <div className="download-panel"><div className="result-heading"><span className="result-check"><Download size={23}/></span><div><h2>فایل‌ها آمادهٔ دریافت‌اند</h2><p>{transfer.fileCount.toLocaleString("fa-IR")} فایل، بدون نصب و ثبت‌نام</p></div></div><div className="download-file-list">{transfer.files.map((file) => <div className="download-file" key={file.id}><FileGlyph name={file.name}/><div className="file-details"><b dir="auto">{file.name}</b><span dir="ltr">{formatSize(file.size)}</span></div><a href={url(file)} className="icon-button" aria-label={`دریافت ${file.name}`} title="دریافت فایل" download={file.name}><Download size={18}/></a></div>)}</div>{transfer.files.length === 1 ? <a href={url(transfer.files[0])} className="button button-primary full-width" download={transfer.files[0].name}><Download size={18}/>دریافت فایل<span className="download-total" dir="ltr">{formatSize(transfer.totalSize)}</span></a> : <button className="button button-primary full-width" onClick={downloadAll} disabled={busy}>{busy ? <LoaderCircle size={18} className="spin"/> : <Download size={18}/>}{busy ? "در حال دریافت…" : "دریافت همهٔ فایل‌ها"}<span className="download-total" dir="ltr">{formatSize(transfer.totalSize)}</span></button>}{error && <div className="inline-error" role="alert">{error}</div>}<div className="download-expiry"><LockKeyhole size={14}/><span>این فایل‌ها تا {hoursLeft.toLocaleString("fa-IR")} ساعت دیگر در دسترس‌اند.</span></div></div>;
 }
 
-export function TransferSuccess({ transfer, origin, onCopy, onReset }: { transfer: Transfer; origin: string; onCopy: (value: string) => void; onReset: () => void }) {
+export function TransferSuccess({ transfer, origin, onCopy, onReset }: {
+  transfer: Transfer;
+  origin: string;
+  onCopy: (value: string) => void;
+  onReset: () => void;
+}) {
   const url = `${origin}/r/${transfer.code}`;
+  const isText = transfer.textContent !== null;
   async function share() {
-    if (navigator.share) {
-      try { await navigator.share({ title: "دریافت فایل با پُل", text: "فایل‌ها آماده‌اند؛ بدون نصب از این لینک دریافت کنید.", url }); } catch { /* user cancelled */ }
-    } else onCopy(url);
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: isText ? "دریافت متن با پُل" : "دریافت فایل با پُل", url });
+        return;
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+    }
+    onCopy(url);
   }
-  return <div className="share-result"><div className="result-heading"><span className="result-check"><Check size={24}/></span><div><h2>فایل‌ها با موفقیت ارسال شدند!</h2><p>لینک را بفرستید، بقیه‌اش با پُل.</p></div></div><div className="share-result-body"><QRImage value={url} size={120}/><div className="share-result-info"><span className="small-label">کد دریافت فایل</span><b className="share-code" dir="ltr">{transfer.code.slice(0, 3)} {transfer.code.slice(3)}</b><span>{transfer.fileCount.toLocaleString("fa-IR")} فایل <i>·</i> <span dir="ltr">{formatSize(transfer.totalSize)}</span></span><span className="result-available"><CheckCircle2 size={13}/>آمادهٔ دریافت روی همهٔ دستگاه‌ها</span></div></div><div className="share-url"><Link2 size={17}/><input value={url} readOnly dir="ltr" aria-label="لینک دریافت فایل" onFocus={(event) => event.target.select()}/><button className="icon-button" aria-label="کپی لینک دریافت" onClick={() => onCopy(url)}><Copy size={16}/></button></div><div className="share-actions"><button className="button button-primary" onClick={() => onCopy(url)}><Copy size={16}/>کپی لینک دریافت</button><button className="button button-outline" onClick={share}><Share2 size={17}/>اشتراک‌گذاری</button></div><button className="text-button new-transfer-button" onClick={onReset}>ارسال فایل جدید<ArrowLeft size={16}/></button></div>;
+
+  return (
+    <div className="share-result share-link-result">
+      <div className="result-heading" role="status">
+        <span className="result-check"><Check size={24}/></span>
+        <div>
+          <h2>{isText ? "متن آمادهٔ دریافت است" : "فایل‌ها با موفقیت ارسال شدند!"}</h2>
+          <p>لینک را بفرستید تا گیرنده بتواند آن را باز کند.</p>
+        </div>
+      </div>
+      <div className="share-url">
+        <Link2 size={17}/>
+        <input value={url} readOnly dir="ltr" aria-label="لینک دریافت" onFocus={(event) => event.target.select()}/>
+      </div>
+      <div className="share-actions">
+        <button className="button button-outline" onClick={() => onCopy(url)}><Copy size={16}/>کپی لینک دریافت</button>
+        <button className="button button-primary" onClick={share}><Share2 size={17}/>اشتراک‌گذاری لینک</button>
+      </div>
+      <div className="share-code-card">
+        <div><span>کد دریافت</span><b className="share-code" dir="ltr">{transfer.code.slice(0, 3)} {transfer.code.slice(3)}</b></div>
+        <button className="icon-button" aria-label="کپی کد دریافت" onClick={() => onCopy(transfer.code)}><Copy size={16}/></button>
+      </div>
+      <button className="text-button new-transfer-button" onClick={onReset}>انتقال جدید<ArrowLeft size={16}/></button>
+    </div>
+  );
 }

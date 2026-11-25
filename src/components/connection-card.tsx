@@ -1,13 +1,76 @@
 "use client";
 
-import { Copy, Download, Link2, LoaderCircle, Monitor, RefreshCw, ScanLine, Smartphone } from "lucide-react";
+import Link from "next/link";
+import { Check, Copy, Download, Link2, LoaderCircle, RefreshCw, ScanLine, Smartphone } from "lucide-react";
 import QRImage from "@/components/qr-code";
+import { FileGlyph } from "@/components/ui";
 import { formatSize, type Transfer } from "@/lib/shared";
 
-export default function ConnectionCard({ inbox, origin, error, onRefresh, onCopy }: { inbox: Transfer | null; origin: string; error: string; onRefresh: () => void; onCopy: (value: string) => void }) {
+type ConnectionCardProps = {
+  inbox: Transfer | null;
+  origin: string;
+  error: string;
+  onRefresh: () => void;
+  onCopy: (value: string) => void;
+};
+
+export default function ConnectionCard({ inbox, origin, error, onRefresh, onCopy }: ConnectionCardProps) {
   const url = inbox && origin ? `${origin}/r/${inbox.code}` : "";
-  return <section className="connection-card" id="quick-connect"><div className="connection-decoration" aria-hidden="true"/><div className="connection-heading"><span className="connection-eyebrow"><span className="live-dot"/>اتصال سریع</span><button className="connection-refresh icon-button" onClick={onRefresh} aria-label="ساخت کد اتصال جدید" title="کد اتصال جدید"><RefreshCw size={16}/></button></div><h2>از گوشی به این دستگاه</h2><p className="connection-description">دوربین گوشی را روی کد بگیرید و متصل شوید.</p>
-    {inbox?.status === "ready" ? <div className="inbox-ready"><div className="inbox-success-icon"><Download size={29}/></div><h3>فایل‌ها رسیدند!</h3><p>{inbox.fileCount.toLocaleString("fa-IR")} فایل · {formatSize(inbox.totalSize)}</p><a className="button button-white full-width" href={`/r/${inbox.code}`}><Download size={17}/>دریافت فایل‌ها</a><button className="connection-link" onClick={onRefresh}><RefreshCw size={15}/>دریافت جدید</button></div> : <><div className="qr-frame"><span className="qr-corner corner-tr"/><span className="qr-corner corner-tl"/><span className="qr-corner corner-br"/><span className="qr-corner corner-bl"/><QRImage value={url} size={132}/></div><div className="qr-caption"><ScanLine size={15}/><span>با دوربین گوشی اسکن کنید</span></div><div className="connection-divider"><span/>یا با کد اتصال<span/></div><div className="connection-code"><div dir="ltr" aria-label={`کد اتصال ${inbox?.code || ""}`}>{inbox ? inbox.code.split("").map((digit, index) => <span key={index}>{digit}</span>) : <span className="code-loading">••• •••</span>}</div><button className="icon-button" disabled={!inbox} onClick={() => inbox && onCopy(inbox.code)} aria-label="کپی کد اتصال"><Copy size={15}/></button></div>{error ? <button className="connection-link connection-error" onClick={onRefresh}>{error} · تلاش مجدد</button> : <button className="connection-link" onClick={() => onCopy(url)} disabled={!url}><Link2 size={15}/><span>کپی لینک ارسال از گوشی</span></button>}</>}
-    <div className="connection-footer"><div className="connected-device-icons"><Smartphone size={13}/><span>↔</span><Monitor size={13}/></div><span>{inbox?.status === "pending" && inbox.fileCount > 0 ? <><LoaderCircle size={12} className="spin"/>در حال دریافت از گوشی…</> : "بدون نصب روی دستگاه دیگر"}</span></div>
-  </section>;
+  const ready = inbox?.status === "ready";
+  const connected = Boolean(inbox?.hasContributor || inbox?.fileCount);
+  const status = ready ? "آمادهٔ دریافت" : error ? "اتصال برقرار نشد" : connected ? "گوشی متصل شد" : inbox ? "منتظر گوشی" : "در حال ساخت کد";
+
+  return (
+    <section className="connection-card pairing-card" id="quick-connect" aria-labelledby="pairing-title">
+      <div className="pairing-top">
+        <span className="pairing-device"><Smartphone size={21} aria-hidden="true"/></span>
+        <span className="pairing-status" role="status"><span/>{status}</span>
+      </div>
+      <h2 id="pairing-title">دریافت از گوشی</h2>
+      <p className="connection-description">
+        {ready ? "فایل‌های رسیده را همین‌جا دانلود کنید." : "دوربین گوشی را باز کنید و QR را اسکن کنید."}
+      </p>
+      {ready ? (
+        <div className="pairing-received">
+          <div className="pairing-received-title"><Check size={18}/><h3>فایل‌ها رسیدند!</h3></div>
+          <ul className="pairing-files">
+            {inbox.files.map((file) => (
+              <li key={file.id}>
+                <span className="pairing-file-icon"><FileGlyph name={file.name} size={17}/></span>
+                <span className="pairing-file-name"><b dir="auto">{file.name}</b><small dir="ltr">{formatSize(file.size)}</small></span>
+                <a
+                  href={`/api/transfers/${inbox.code}/download?file=${encodeURIComponent(file.id)}`}
+                  className="pairing-download"
+                  aria-label={`دانلود ${file.name}`}
+                  download={file.name}
+                ><Download size={19}/></a>
+              </li>
+            ))}
+          </ul>
+          <Link className="pairing-action" href={`/r/${inbox.code}`}>مشاهدهٔ همهٔ فایل‌ها</Link>
+          <button className="pairing-action" type="button" onClick={onRefresh}><RefreshCw size={16}/>دریافت جدید</button>
+        </div>
+      ) : error ? (
+        <div className="pairing-placeholder">
+          <p role="alert">{error}</p>
+          <button className="pairing-action" type="button" onClick={onRefresh}><RefreshCw size={16}/>تلاش مجدد</button>
+        </div>
+      ) : (
+        <>
+          <div className="pairing-qr">
+            {url ? <QRImage value={url} size={168}/> : <LoaderCircle size={28} className="spin" aria-hidden="true"/>}
+          </div>
+          <div className="pairing-code-label"><ScanLine size={15}/>کد اتصال</div>
+          <div className="connection-code pairing-code">
+            <b dir="ltr">{inbox?.code ?? "••••••"}</b>
+            <button className="pairing-icon-button" type="button" disabled={!inbox} onClick={() => inbox && onCopy(inbox.code)} aria-label="کپی کد اتصال"><Copy size={17}/></button>
+          </div>
+          <div className="pairing-actions">
+            <button className="pairing-action" type="button" disabled={!url} onClick={() => onCopy(url)}><Link2 size={17}/>کپی لینک اتصال</button>
+            <button className="pairing-icon-button" type="button" disabled={!inbox} onClick={onRefresh} aria-label="ساخت کد اتصال جدید" title="کد اتصال جدید"><RefreshCw size={17}/></button>
+          </div>
+        </>
+      )}
+    </section>
+  );
 }

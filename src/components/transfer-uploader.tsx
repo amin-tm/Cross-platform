@@ -177,11 +177,67 @@ export default function TransferUploader({ roomCode, onComplete, onBusyChange }:
     }
   }
 
-  return <div className="uploader"><input ref={input} type="file" multiple className="visually-hidden" aria-label="انتخاب فایل برای ارسال" onChange={(event) => { if (event.target.files) addFiles(event.target.files); event.target.value = ""; }}/>
-    <div className={`upload-dropzone ${dragging ? "is-dragging" : ""} ${files.length ? "has-files" : ""}`} onDragOver={(event) => { event.preventDefault(); if (!hasStarted) setDragging(true); }} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setDragging(false); }} onDrop={(event) => { event.preventDefault(); setDragging(false); addFiles(event.dataTransfer.files); }}>
-      {!files.length ? <div className="dropzone-content"><UploadIllustration/><h3><span className="upload-pointer-heading">{dragging ? "رها کنید، بقیه‌اش با پُل" : "فایل‌ها را اینجا رها کنید"}</span><span className="upload-touch-heading">فایل‌ها را برای ارسال انتخاب کنید</span></h3><p>یا با یک کلیک، فایل‌های خود را انتخاب کنید</p><button className="button button-primary select-file-button" onClick={() => input.current?.click()}><Plus size={18}/><span>انتخاب فایل‌ها</span></button><div className="upload-limits"><span>همهٔ فرمت‌ها</span><i/><span>تا ۲ گیگابایت</span></div></div> : <div className="selected-files"><div className="selected-header"><span><FilePlus2 size={17}/>{files.length.toLocaleString("fa-IR")} فایل انتخاب شده</span>{!hasStarted && <button className="text-button" onClick={() => input.current?.click()}><Plus size={15}/>افزودن فایل</button>}</div><div className="upload-file-list">{files.map((file, index) => <div className="upload-file" key={`${file.name}-${file.lastModified}-${index}`}><FileGlyph name={file.name}/><div className="file-details"><b dir="auto">{file.name}</b><span dir="ltr">{formatSize(file.size)}</span></div>{completed.has(index) ? <Check size={18} className="success-icon"/> : !hasStarted ? <button className="icon-button small" aria-label={`حذف ${file.name}`} onClick={() => setFiles((current) => current.filter((_, i) => i !== index))}><X size={15}/></button> : <span className="file-waiting-dot"/>}</div>)}</div><div className="upload-summary"><span>حجم کل</span><strong dir="ltr">{formatSize(total)}</strong></div>{uploading ? <div className="upload-progress"><div className="progress-label"><span role="status"><LoaderCircle size={15} className="spin"/>{phase === "preparing" ? "در حال آماده‌سازی فایل…" : phase === "verifying" ? "در حال تأیید فایل…" : "در حال ارسال…"}</span><strong>{progress.toLocaleString("fa-IR")}٪</strong></div><div className="upload-stats"><span> سرعت: {speed > 0 ? `${(speed / 1048576).toFixed(2)} MB/s` : "در حال محاسبه"}</span><span>{formatSize(uploadedBytes)} از {formatSize(total)}
-  </span><span> زمان باقی‌مانده: {speed > 0 ? `${Math.ceil((total - uploadedBytes) / speed)} ثانیه`
-        : "در حال محاسبه" }</span></div><div className="progress-track"><div style={{ width: `${progress}%` }}/></div><div className="progress-bottom"><span dir="auto">{activeFile}</span><button onClick={() => aborter.current?.abort()}>توقف ارسال</button></div></div> : <button className="button button-primary full-width" onClick={startUpload}><ArrowUp size={18}/>{hasStarted ? "ادامه ارسال" : "ارسال فایل‌ها"}<span className="button-file-count">{files.length.toLocaleString("fa-IR")}</span></button>}</div>}
-    </div>{error && <div className="inline-error" role="alert"><CircleAlert size={16}/><span>{error}</span></div>}<div className="uploader-footer"><LockKeyhole size={14}/><span>فایل‌ها خصوصی‌اند و پس از ۲۴ ساعت حذف می‌شوند.</span><span className="footer-info" title="هر کسی که لینک یا کد را داشته باشد می‌تواند فایل‌ها را دریافت کند.">i</span></div>
-  </div>;
+  const phaseLabel = phase === "preparing" ? "در حال آماده‌سازی فایل…" : phase === "verifying" ? "در حال تأیید فایل…" : "در حال ارسال…";
+  const fileCount = files.length.toLocaleString("fa-IR");
+  const remaining = Math.max(0, total - uploadedBytes);
+  return (
+    <div className="uploader">
+      <input ref={input} type="file" multiple className="visually-hidden" tabIndex={-1} aria-label="انتخاب فایل برای ارسال" onChange={(event) => {
+        if (event.target.files) addFiles(event.target.files);
+        event.target.value = "";
+      }}/>
+      <div
+        className={`upload-dropzone ${dragging ? "is-dragging" : ""} ${files.length ? "has-files" : ""}`}
+        onDragOver={(event) => { event.preventDefault(); if (!hasStarted) setDragging(true); }}
+        onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setDragging(false); }}
+        onDrop={(event) => { event.preventDefault(); setDragging(false); addFiles(event.dataTransfer.files); }}
+      >
+        {!files.length ? (
+          <div className="dropzone-content">
+            <UploadIllustration/>
+            <h3><span className="upload-pointer-heading">{dragging ? "فایل را رها کنید" : "فایل‌ها را اینجا رها کنید"}</span><span className="upload-touch-heading">فایل‌ها را برای ارسال انتخاب کنید</span></h3>
+            <button className="button button-primary select-file-button" onClick={() => input.current?.click()}><Plus size={19}/>انتخاب فایل‌ها</button>
+            <div className="upload-limits"><span>تا ۲ گیگابایت در هر انتقال</span></div>
+          </div>
+        ) : (
+          <div className="selected-files">
+            <div className="selected-header">
+              <span><FilePlus2 size={18}/>{fileCount} فایل انتخاب شد</span>
+              {!hasStarted && <button className="text-button add-file-button" onClick={() => input.current?.click()}><Plus size={17}/>افزودن فایل</button>}
+            </div>
+            <ul className="upload-file-list">
+              {files.map((file, index) => (
+                <li className="upload-file" key={`${file.name}-${file.lastModified}-${index}`}>
+                  <FileGlyph name={file.name}/>
+                  <div className="file-details"><b dir="auto">{file.name}</b><span dir="ltr">{formatSize(file.size)}</span></div>
+                  {completed.has(index) ? <Check size={19} className="success-icon" aria-label="ارسال شد"/> :
+                    !hasStarted ? <button className="icon-button remove-file-button" aria-label={`حذف ${file.name}`} onClick={() => setFiles((current) => current.filter((_, i) => i !== index))}><X size={17}/></button> :
+                    <span className="file-waiting-dot" aria-label="در صف ارسال"/>}
+                </li>
+              ))}
+            </ul>
+            <div className="upload-summary"><span>حجم کل</span><strong dir="ltr">{formatSize(total)}</strong></div>
+            {uploading ? (
+              <div className="upload-progress">
+                <div className="progress-label"><span role="status"><LoaderCircle size={15} className="spin"/>{phaseLabel}</span><strong>{progress.toLocaleString("fa-IR")}٪</strong></div>
+                <div className="progress-track" role="progressbar" aria-label="پیشرفت ارسال" aria-valuenow={progress}><div style={{ width: `${progress}%` }}/></div>
+                <div className="upload-stats">
+                  <span>{formatSize(uploadedBytes)} از {formatSize(total)}</span>
+                  {phase === "uploading" && speed > 0 && <span>حدود {Math.ceil(remaining / speed).toLocaleString("fa-IR")} ثانیه باقی‌مانده</span>}
+                </div>
+                <div className="progress-bottom"><span dir="auto">{activeFile}</span><button onClick={() => aborter.current?.abort()}>توقف ارسال</button></div>
+              </div>
+            ) : (
+              <button className="button button-primary full-width submit-files-button" onClick={startUpload}>
+                <ArrowUp size={18}/>{hasStarted ? "ادامه ارسال" : "ارسال فایل‌ها"}
+                <span className="button-file-count" aria-hidden="true">{fileCount}</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+      {error && <div className="inline-error" role="alert"><CircleAlert size={16}/><span>{error}</span></div>}
+      <div className="uploader-footer"><LockKeyhole size={14}/><span>لینک دریافت تا ۲۴ ساعت اعتبار دارد.</span></div>
+    </div>
+  );
 }

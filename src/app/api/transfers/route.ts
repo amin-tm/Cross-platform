@@ -18,8 +18,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const visitor = await getVisitor(true);
+    const visitor = await getVisitor();
     after(cleanupExpired);
+    if (!visitor) return Response.json({ transfers: [] });
 
     const items = await db
       .select()
@@ -27,8 +28,8 @@ export async function GET() {
       .where(
         and(
           or(
-            eq(transfers.ownerId, visitor!),
-            eq(transfers.contributorId, visitor!)
+            eq(transfers.ownerId, visitor),
+            eq(transfers.contributorId, visitor)
           ),
           eq(transfers.status, "ready"),
           gt(transfers.expiresAt, new Date())
